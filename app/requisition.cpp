@@ -79,3 +79,39 @@ string ackMessage(int blockNumber) {
     
     return msg;
 }
+
+//  2 bytes     2 bytes      string    1 byte
+//  -----------------------------------------
+// | Opcode |  ErrorCode |   ErrMsg   |   0  |
+//  -----------------------------------------
+//
+//- Opcode: 5
+//- ErrorCode: 0 á 7 (abaixo)
+//- ErrMsg: String Identificando o erro
+//- Delimitador: 0x00 (1 byte)
+
+string errorMessage(int errorCode, string errMsg) {
+
+    string msg;
+    msg += (char) (ERROR >> 8);
+    msg += (char) (ERROR & 0xFF);
+    msg += (char) (errorCode >> 8);
+    msg += (char) (errorCode & 0xFF);
+    msg += errMsg;
+    msg += '\0';
+
+    return msg;
+}
+
+/*
+    Recebe uma mensagem com cabeçalho e retorna apenas a mensagem de erro em string
+*/
+string errorCheck(char* msg) {
+    // remove os primeiros caracteres da mensagem que são o cabeçalho deixando apenas a mensagem
+    string errMsg = msg + 4;
+
+    // remove o delimitador 0x00 ao final da mensagem
+    errMsg.pop_back();
+
+    return errMsg;
+}

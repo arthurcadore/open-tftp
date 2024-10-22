@@ -16,6 +16,21 @@ int createSocket() {
     return sockfd; // Retorna o descritor de socket se for bem-sucedido
 }
 
+
+/*
+    Recebe uma mensagem com cabeçalho e retorna apenas a mensagem de erro em string
+*/
+string errorCheck(char* msg) {
+    // remove os primeiros caracteres da mensagem que são o cabeçalho deixando apenas a mensagem
+    string errMsg = msg + 4;
+
+    // remove o delimitador 0x00 ao final da mensagem
+    errMsg.pop_back();
+
+    return errMsg;
+}
+
+
 /*
   Converte uma string contendo um endereço IPv4 para uma estrutura sockaddr_in
   Parâmetros:
@@ -61,7 +76,10 @@ bool checkMsg(char* buffer, int opcode, int blockNumber) {
   cout << "Opcode Recebido: " << (int) buffer[0] << (int) buffer[1] << endl;
 
     if (buffer[0] != 0 || buffer[1] != opcode) {
-        throw std::runtime_error("Erro: opcode inválido");
+
+        // coleta o código de erro e a mensagem de erro
+        string error = errorCheck(buffer);
+        throw std::runtime_error("Opcode inválido, Erro: " + error);
         return false;
     }
 

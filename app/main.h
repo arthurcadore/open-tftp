@@ -29,6 +29,8 @@ void download(sockaddr_in ip, int porta, string arquivo);
 
 void upload(sockaddr_in ip, int porta, string arquivo);
 
+string errorCheck(char* msg);
+
 int main(int argc, char* argv[]);
 
 

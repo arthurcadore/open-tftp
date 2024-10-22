@@ -1,5 +1,13 @@
 #include "io.h"
 
+/*
+    Função para ler um arquivo e retornar o conteúdo em um buffer
+
+    Parâmetros:
+        - nomeArquivo: nome do arquivo a ser lido
+        - buffer: ponteiro para o buffer que irá armazenar o conteúdo do arquivo
+        - tamanho: tamanho do buffer
+*/
 void writefile(const char* buffer, std::size_t tamanho, const std::string& nomeArquivo) {
     // Abre o arquivo em modo binário
     std::ofstream arquivo(nomeArquivo, std::ios::out | std::ios::binary | std::ios::app);

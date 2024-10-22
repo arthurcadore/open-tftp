@@ -41,4 +41,9 @@ string datablock(int blockNumber, string data);
 */
 string ackMessage(int blockNumber);
 
+/* 
+    Function to create the error message to be sent to the server
+*/
+string errorMessage(int errorCode, string errMsg)
+
 #endif
