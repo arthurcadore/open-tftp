@@ -102,16 +102,3 @@ string errorMessage(int errorCode, string errMsg) {
 
     return msg;
 }
-
-/*
-    Recebe uma mensagem com cabeçalho e retorna apenas a mensagem de erro em string
-*/
-string errorCheck(char* msg) {
-    // remove os primeiros caracteres da mensagem que são o cabeçalho deixando apenas a mensagem
-    string errMsg = msg + 4;
-
-    // remove o delimitador 0x00 ao final da mensagem
-    errMsg.pop_back();
-
-    return errMsg;
-}
