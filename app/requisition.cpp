@@ -47,16 +47,21 @@ string requestMessage(int opcode, string filename, string mode) {
 // - Block: número do bloco (2 bytes)
 // - Data: 512 Bytes
 
-string datablock(int blockNumber, string data) {
-
-    string msg;
-    msg += (char) (DATA >> 8);
-    msg += (char) (DATA & 0xFF);
-    msg += (char) (blockNumber >> 8);
-    msg += (char) (blockNumber & 0xFF);
-    msg += data;
-
-    return msg;
+string datablock(int blockNumber, char* data) {
+    
+        string msg;
+        msg += (char) (DATA >> 8);
+        msg += (char) (DATA & 0xFF);
+        msg += (char) (blockNumber >> 8);
+        msg += (char) (blockNumber & 0xFF);
+    
+        for (int i = 0; i < 512; i++) {
+            msg += data[i];
+        }
+    
+        cout << "Data: " << blockNumber << endl;
+    
+        return msg;
 }
 
 //   2 bytes     2 bytes

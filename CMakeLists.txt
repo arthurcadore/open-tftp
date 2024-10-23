@@ -1,17 +1,36 @@
 cmake_minimum_required(VERSION 3.13)
 project(tftpclient.out)
 
-set(CMAKE_CXX_STANDARD 14)
+# Use g++ as the C++ compiler
+set(CMAKE_CXX_COMPILER g++)
 
-# Define o diretório de saída para o binário
+# Use C++14 standard explicitly
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Define output directory for the binary
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/out)
 
-add_executable(tftpclient.out app/main.cpp app/main.h app/requisition.h app/requisition.cpp app/io.h app/io.cpp) 
+# Create output directory if it doesn't exist
+file(MAKE_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
-add_custom_target(run
-    COMMAND tftpclient.out
-    DEPENDS tftpclient.out
-    
-  # Define o diretório de trabalho para ./out
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/out
+# Add the executable
+add_executable(tftpclient.out 
+    app/main.cpp 
+    app/main.h 
+    app/requisition.cpp 
+    app/requisition.h 
+    app/io.cpp 
+    app/io.h
 )
+
+# Custom target for 'make run'
+add_custom_target(run
+    COMMAND tftpclient.out || echo "Execution failed!"
+    DEPENDS tftpclient.out
+    WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+)
+
+# Enable verbose output for the build process
+set(CMAKE_VERBOSE_MAKEFILE ON)

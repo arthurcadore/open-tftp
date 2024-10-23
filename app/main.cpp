@@ -68,7 +68,7 @@ sockaddr_in stringToIPv4(const std::string& ipAddress) {
   Retorno:
     - true se a mensagem é válida, false caso contrário
 */
-bool checkMsg(char* buffer, int opcode, int blockNumber) {
+bool checkData(char* buffer, int opcode, int blockNumber) {
 
   blockNumber = blockNumber + 1;
 
@@ -93,6 +93,29 @@ bool checkMsg(char* buffer, int opcode, int blockNumber) {
     return true;
 }
 
+bool checkACK(char* buffer, int opcode, int blockNumber){
+
+  cout << "Opcode Esperado: " << "0" << opcode << endl;
+  cout << "Opcode Recebido: " << (int) buffer[0] << (int) buffer[1] << endl;
+
+    if (buffer[0] != 0 || buffer[1] != opcode) {
+        // coleta o código de erro e a mensagem de erro
+        string error = errorCheck(buffer);
+        throw std::runtime_error("Opcode inválido, Erro: " + error);
+        return false;
+    }
+
+  cout << "Block Number Esperado: " << blockNumber << endl;
+  cout << "Block Number Recebido: " << (int) buffer[2] << (int) buffer[3] << endl;
+
+    if (buffer[2] != (blockNumber >> 8) || buffer[3] != (blockNumber & 0xFF)) {
+        throw std::runtime_error("Erro: número de bloco inválido");
+        return false;
+    }
+    return true;
+}
+
+
 /*
   Converte uma estrutura sockaddr_in para uma string contendo um endereço IPv4
   Parâmetros:
@@ -111,16 +134,16 @@ void download(sockaddr_in ip, int porta, string arquivo) {
 
         if (sentBytes < 0) {
             throw std::runtime_error("Erro ao enviar a mensagem");
-        } else {
-            std::cout << "Mensagem enviada com sucesso!\n";
-        }
+        } 
 
-        bool state = true; // Estado do download
+        // Estado do download
+        bool state = true; 
         int blockNumber = 0;
 
-          // Enviar a mensagem de ack para o server
-          string ack = ackMessage(blockNumber);
-           sentBytes = sendto(sockfd, ack.c_str(), ack.size(), 0, (struct sockaddr*)&ip, sizeof(ip));
+        // Enviar a mensagem de ack para o server
+        string ack = ackMessage(blockNumber);
+        sentBytes = sendto(sockfd, ack.c_str(), ack.size(), 0, (struct sockaddr*)&ip, sizeof(ip));
+        
         do {
           // Aguarda a resposta do servidor de um bloco de dados com 512 bytes e imprime no terminal
           char buffer[516];
@@ -133,7 +156,7 @@ void download(sockaddr_in ip, int porta, string arquivo) {
               throw std::runtime_error("Erro ao receber a mensagem");
           }
 
-          if(checkMsg(buffer, DATA, blockNumber)){
+          if(checkData(buffer, DATA, blockNumber)){
             
             // 2 bytes opcode + 2 bytes block number 
             // em seguida escreve em um arquivo, removendo os 4 primeiros bytes
@@ -182,9 +205,44 @@ void upload(sockaddr_in ip, int porta, string arquivo) {
 
         if (sentBytes < 0) {
             throw std::runtime_error("Erro ao enviar a mensagem");
-        } else {
-            std::cout << "Mensagem enviada com sucesso!\n";
-        }
+        } 
+
+        bool state = true; // Estado do download
+        int blockNumber = 0;
+
+        do {  
+          // aguarda um ACK do servidor para o bloco de dados enviado. 
+          char buffer[516];
+          socklen_t len = sizeof(ip);
+          ssize_t recvBytes = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&ip, &len);
+
+          cout << "Recebendo " << recvBytes << " bytes" << endl;
+
+          if (recvBytes < 0) {
+              throw std::runtime_error("Erro ao receber a mensagem");
+          }
+
+          // verifica se o ACK recebido é válido
+          if(checkACK(buffer, ACK, blockNumber)){
+            
+            // lê 512 bytes do arquivo e armazena no buffer
+            readfile(arquivo, buffer, 512, blockNumber * 512);
+
+            // Enviar a mensagem para o servidor
+
+            string data = datablock(blockNumber, buffer);
+
+            sentBytes = sendto(sockfd, data.c_str(), data.size(), 0, (struct sockaddr*)&ip, sizeof(ip));
+
+            if (sentBytes < 0) {
+                throw std::runtime_error("Erro ao enviar a mensagem");
+            }    
+
+            // incrementa o número do bloco
+
+            blockNumber++;
+          }
+        } while (state);
 
         // Fechar o socket
         close(sockfd);
