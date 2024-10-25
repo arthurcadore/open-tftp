@@ -93,6 +93,15 @@ bool checkData(char* buffer, int opcode, int blockNumber) {
     return true;
 }
 
+/*
+  Verifica se a mensagem recebida de ACK é válida, comparando o opcode e o número do bloco
+  Parâmetros:
+    - buffer: buffer contendo a mensagem recebida
+    - opcode: opcode esperado
+    - blockNumber: número do bloco esperado
+  Retorno:
+    - true se a mensagem é válida, false caso contrário
+*/
 bool checkACK(char* buffer, int opcode, int blockNumber){
 
   cout << "Opcode Esperado: " << "0" << opcode << endl;

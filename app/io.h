@@ -15,6 +15,14 @@
 */
 void writefile(const char* buffer, std::size_t tamanho, const std::string& nomeArquivo);
 
+/*
+    Função para ler de um arquivo de texto uma quantidade especifica de bytes e armazenar em um buffer
+    Parâmetros:
+        - nomeArquivo: nome do arquivo a ser lido
+        - buffer: ponteiro para o buffer que irá armazenar o conteúdo do arquivo
+        - tamanho: tamanho do buffer
+        - offset: offset para leitura do arquivo
+*/
 void readfile(const std::string& nomeArquivo, char* buffer, std::size_t tamanho, std::size_t offset);
 
 #endif
