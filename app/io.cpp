@@ -1,6 +1,34 @@
 #include "io.h"
 
 /*
+    Verifica se o arquivo existe, se é possivel abrir e retorna seu tamanho em bytes
+
+    Parâmetros:
+        - nomeArquivo: nome do arquivo a ser lido
+*/
+int checkfile(const std::string& nomeArquivo){
+
+    // Abre o arquivo em modo binário
+    std::ifstream arquivo(nomeArquivo, std::ios::in | std::ios::binary);
+
+    // Verifica se o arquivo foi aberto com sucesso
+    if (!arquivo) {
+        std::cerr << "Erro ao abrir o arquivo para leitura: " << nomeArquivo << std::endl;
+        return -1;
+    }
+
+    // Move o ponteiro do arquivo para o final
+    arquivo.seekg(0, std::ios::end);
+
+    // Pega o tamanho do arquivo
+    int tamanho = arquivo.tellg();
+
+    // Fecha o arquivo
+    arquivo.close();
+
+    return tamanho;
+}
+/*
     Função para escrever em um arquivo de texto o conteúdo de um buffer
 
     Parâmetros:

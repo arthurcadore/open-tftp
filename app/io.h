@@ -7,6 +7,14 @@
 #include <cstddef> // For std::size_t
 
 /*
+    Verifica se o arquivo existe, se é possivel abrir e retorna seu tamanho em bytes
+
+    Parâmetros:
+        - nomeArquivo: nome do arquivo a ser lido
+*/
+int checkfile(const std::string& nomeArquivo);
+
+/*
     Função para ler um arquivo e retornar o conteúdo em um buffer
     Parâmetros:
         - nomeArquivo: nome do arquivo a ser lido

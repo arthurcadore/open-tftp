@@ -206,6 +206,12 @@ void upload(sockaddr_in ip, int porta, string arquivo) {
         int sockfd = createSocket();
         ip.sin_port = htons(porta);
 
+        int fileSize = checkfile(arquivo);
+
+        if (fileSize < 0) {
+            throw std::runtime_error("Erro ao abrir o arquivo");
+        }
+
         string msg = requestMessage(WRQ, arquivo, "octet"); 
 
         // Enviar a mensagem para o servidor
@@ -234,8 +240,15 @@ void upload(sockaddr_in ip, int porta, string arquivo) {
           // verifica se o ACK recebido é válido
           if(checkACK(buffer, ACK, blockNumber)){
             
+            blockNumber++;
+
             // lê 512 bytes do arquivo e armazena no buffer
             readfile(arquivo, buffer, 512, blockNumber * 512);
+
+            // Verifica se o arquivo foi enviado completamente
+            if (blockNumber * 512 > fileSize) {
+                state = false;
+            }
 
             // Enviar a mensagem para o servidor
             string data = datablock(blockNumber, buffer);
@@ -248,7 +261,7 @@ void upload(sockaddr_in ip, int porta, string arquivo) {
 
             // incrementa o número do bloco
 
-            blockNumber++;
+
           }
         } while (state);
 
