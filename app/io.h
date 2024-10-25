@@ -30,7 +30,8 @@ void writefile(const char* buffer, std::size_t tamanho, const std::string& nomeA
         - buffer: ponteiro para o buffer que irá armazenar o conteúdo do arquivo
         - tamanho: tamanho do buffer
         - offset: offset para leitura do arquivo
+        - lenght: tamanho maximo do arquivo
 */
-void readfile(const std::string& nomeArquivo, char* buffer, std::size_t tamanho, std::size_t offset);
+bool readfile(const std::string& nomeArquivo, char* buffer, std::size_t data_lenght, std::size_t offset, std::size_t file_lenght);
 
 #endif

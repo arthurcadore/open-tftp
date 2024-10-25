@@ -69,30 +69,49 @@ void writefile(const char* buffer, std::size_t tamanho, const std::string& nomeA
         - buffer: ponteiro para o buffer que irá armazenar o conteúdo do arquivo
         - tamanho: tamanho do buffer
         - offset: offset para leitura do arquivo
+        - lenght: tamanho maximo do arquivo
 */
 
-void readfile(const std::string& nomeArquivo, char* buffer, std::size_t tamanho, std::size_t offset) {
+bool readfile(const std::string& nomeArquivo, char* buffer, std::size_t data_lenght, std::size_t offset, std::size_t file_lenght) {
     // Abre o arquivo em modo binário
     std::ifstream arquivo(nomeArquivo, std::ios::in | std::ios::binary);
 
     // Verifica se o arquivo foi aberto com sucesso
     if (!arquivo) {
         std::cerr << "Erro ao abrir o arquivo para leitura: " << nomeArquivo << std::endl;
-        return;
+        return false;
     }
 
-    // Move o ponteiro do arquivo para o offset especificado
-    arquivo.seekg(offset);
+    // Verifca se o offset é maior que o tamanho do arquivo
+    if (file_lenght >= offset + data_lenght) {
 
-    // Lê o arquivo e armazena no buffer
-    arquivo.read(buffer, tamanho);
+        // Move o ponteiro do arquivo para o offset
+        // Pega um bloco de "data_lenght" bytes do arquivo e armazena no buffer
+        arquivo.seekg(offset);
+        arquivo.read(buffer, data_lenght);
 
-    // Verifica se a leitura foi bem-sucedida
-    if (!arquivo) {
-        std::cerr << "Erro ao ler o arquivo: " << nomeArquivo << std::endl;
+        // Verifica se a leitura foi bem-sucedida
+        if (!arquivo) {
+            std::cerr << "Erro ao ler o arquivo: " << nomeArquivo << std::endl;
+        }
+
+        arquivo.close();
+        return true;
+        
+    } else {
+
+        // Leva o ponteiro até o offset e lê o restante do arquivo
+        arquivo.seekg(offset);
+        arquivo.read(buffer, file_lenght - offset);
+
+        // Verifica se a leitura foi bem-sucedida
+        if (!arquivo) {
+            std::cerr << "Erro ao ler o arquivo: " << nomeArquivo << std::endl;
+        }
+    
+        arquivo.close();
+        return false;
     }
-
-    // Fecha o arquivo
-    arquivo.close();
+    
 }
 
