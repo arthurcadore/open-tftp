@@ -34,7 +34,7 @@ string requestMessage(int opcode, string filename, string mode);
 /* 
     Function to create the data block to be sent to the server        
 */
-string datablock(int blockNumber, string data);
+string datablock(int blockNumber, char* data);
 
 /* 
     Function to create the ACK message to be sent to the server
@@ -44,6 +44,6 @@ string ackMessage(int blockNumber);
 /* 
     Function to create the error message to be sent to the server
 */
-string errorMessage(int errorCode, string errMsg)
+string errorMessage(int errorCode, string errMsg);
 
 #endif

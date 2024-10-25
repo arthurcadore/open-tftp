@@ -238,7 +238,6 @@ void upload(sockaddr_in ip, int porta, string arquivo) {
             readfile(arquivo, buffer, 512, blockNumber * 512);
 
             // Enviar a mensagem para o servidor
-
             string data = datablock(blockNumber, buffer);
 
             sentBytes = sendto(sockfd, data.c_str(), data.size(), 0, (struct sockaddr*)&ip, sizeof(ip));
