@@ -1,17 +1,3 @@
-
-#include <fstream>
-#include <iostream>
-#include <list>
-#include <string>
-#include <vector>
-
-#include <sys/socket.h> // Para socket
-#include <arpa/inet.h>  // Para inet_pton
-#include <netinet/in.h> // Para sockaddr_in
-#include <cstring>      // Para memset
-#include <unistd.h>     // Para close
-#include <stdexcept>    // Para std::runtime_error
-
 #include "requisition.h"
 
 
@@ -34,7 +20,7 @@ std::vector<uint8_t> requestMessage::serialize() const {
     data.push_back(delimiter);
 
     // Insere o tipo de dado ao final do vetor
-    data.insert(data.end(), mode.begin(), mode.end());    
+    data.insert(data.end(), data.begin(), data.end());    
 
     data.push_back(delimiter);
     return data;
@@ -54,7 +40,7 @@ std::vector<uint8_t> dataMessage::serialize() const {
     data.push_back(blockNumber & 0xFF);
 
     // Insere os dados ao final do vetor
-    data.insert(data.end(), mode.begin(), mode.end());
+    data.insert(data.end(), data.begin(), data.end());
     return data;
 }
 

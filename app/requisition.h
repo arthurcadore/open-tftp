@@ -1,6 +1,7 @@
 #ifndef REQUISITION_H
 #define REQUISITION_H
 
+
 #include <fstream>
 #include <iostream>
 #include <list>
@@ -58,7 +59,7 @@ struct dataMessage {
     std::string data;     // Dados
 
     // Construtor
-    dataBlock(uint16_t op, uint16_t block, const std::string& data): 
+    dataMessage(uint16_t op, uint16_t block, const std::string& data): 
         opcode(op), 
         blockNumber(block), 
         data(data) {}
