@@ -31,7 +31,7 @@ using namespace std;
 
 string requestMessage(int opcode, string filename, string mode);
 
-/* 
+/* '
     Function to create the data block to be sent to the server        
 */
 string datablock(int blockNumber, char* data);
