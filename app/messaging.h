@@ -1,6 +1,9 @@
 #ifndef MESSAGING_H
 #define MESSAGING_H
 
+#include <string>
+#include <vector>
+
 /*
 Definição dos opcodes para cada tipo de mensagem. 
 */
