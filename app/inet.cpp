@@ -1,15 +1,6 @@
 #include "inet.h"
 
-/*
-  Converte uma string contendo um endereço IPv4 para uma estrutura sockaddr_in
-  Parâmetros:
-    - ipAddress: string contendo o endereço IPv4
-  Retorno:
-    - estrutura sockaddr_in preenchida com o endereço IPv4
-  Exceção:
-    - std::invalid_argument caso o endereço IPv4 seja inválido
-*/
-std::sockaddr_in stringToIPv4(const std::string& ipAddress) {
+sockaddr_in stringToIPv4(const std::string& ipAddress) {
 
     // Cria uma estrutura sockaddr_in para armazenar o endereço IPv4
     struct sockaddr_in ipv4Addr;
@@ -28,8 +19,8 @@ std::sockaddr_in stringToIPv4(const std::string& ipAddress) {
     return ipv4Addr;
 }
 
-std::int stringToPort(const std::string& p) {
-  std::int port;
+int stringToPort(const std::string& p) {
+  int port;
 
   try {
     port = stoi(p);
@@ -38,7 +29,18 @@ std::int stringToPort(const std::string& p) {
     }
     return port;
 
-  } catch (invalid_argument e) {
+  } catch (std::invalid_argument e) {
         throw std::invalid_argument("Porta inválida: " + port);
   }
+}
+
+void tftpclient::download(const std::string& filename){
+    std::cout << "Fazendo download do arquivo..." << std::endl;
+    std::cout << "Conectando ao servidor " << ip << " na porta " << port << std::endl;
+}
+
+void tftpclient::upload(const std::string& filename){
+    std::cout << "Fazendo upload do arquivo..." << std::endl;
+    std::cout << "Conectando ao servidor " << ip << " na porta " << port << std::endl;
+
 }

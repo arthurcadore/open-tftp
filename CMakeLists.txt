@@ -12,7 +12,9 @@ add_executable(tftpclient.out
                app/messaging.h 
                app/messaging.cpp 
                app/io.h 
-               app/io.cpp) 
+               app/io.cpp
+               app/inet.h
+               app/inet.cpp) 
 
 add_custom_target(run
     COMMAND tftpclient.out

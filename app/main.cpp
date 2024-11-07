@@ -1,15 +1,9 @@
-#include <fstream>
-#include <iostream>
-#include <string>
-
 #include "main.h"
-#include "messaging.h"
-#include "io.h"
 
 /*
   Laço do prompt de comando
 */
-void cli() {
+void cli(const std::string& ip, const std::string& port) {
   while (true) {
 
       // exibe o prompt de comando
@@ -45,7 +39,11 @@ void cli() {
           continue;
         }
 
-        std::cout << "Fazendo download do arquivo..." << std::endl;
+        // instancia um cliente TFTP
+        tftpclient client(ip, port);
+
+        // faz o download do arquivo
+        client.download(argumento);
 
 
       // verifica se o comando é "put" e chama a função upload
@@ -57,7 +55,11 @@ void cli() {
           continue;
         }
 
-        std::cout << "Fazendo upload do arquivo..." << std::endl;
+        // instancia um cliente TFTP
+        tftpclient client(ip, port);
+
+        // faz o upload do arquivo
+        client.upload(argumento);
 
       // comando inválido
       } else {
@@ -80,6 +82,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  // inicializa a cli
-  cli();
+  // Inicializa a cli (prompt de comando)
+  cli(argv[1], argv[2]);
+
 }
