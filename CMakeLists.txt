@@ -9,8 +9,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/out)
 add_executable(tftpclient.out 
                app/main.cpp 
                app/main.h 
-               app/requisition.h 
-               app/requisition.cpp 
+               app/messaging.h 
+               app/messaging.cpp 
                app/io.h 
                app/io.cpp) 
 
