@@ -36,3 +36,47 @@ Sua implementação do protocolo TFTP deve ser capaz de se comunicar com um serv
 * [tftp_server](https://moodle.ifsc.edu.br/mod/resource/view.php?id=185347): um servidor tftp rudimentar feito para este projeto
 
 As instruções para as estapas deste projeto serão fornecidas no [material de PTC contido no Moodle](https://moodle.ifsc.edu.br/course/view.php?id=4072#section-2).
+
+
+### Máquina de estado envio ###
+```mermaid
+---
+config:
+  layout: elk
+---
+stateDiagram
+  direction LR
+  [*] --> Init
+  Init --> TX
+  Init --> Erro
+  Init --> PacoteFinal
+  TX --> Erro
+  Erro --> [*]
+  TX --> PacoteFinal
+  TX --> TX
+  TX --> TX
+  PacoteFinal --> PacoteFinal
+  PacoteFinal --> Fim
+  Fim --> [*]
+```
+
+
+### Máquina de estado recepção ###
+
+```mermaid
+---
+config:
+  layout: elk
+---
+stateDiagram
+  direction LR
+  [*] --> Init
+  Init --> Fim
+  Fim --> [*]
+  Init --> Erro
+  Erro --> [*]
+  Init --> RX
+  RX --> Erro
+  RX --> Fim
+  RX --> RX
+```
