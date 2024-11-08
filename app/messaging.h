@@ -8,20 +8,20 @@
 Definição dos opcodes para cada tipo de mensagem. 
 */
 enum class OpcodeRM : uint16_t {
-    Read = 1,
-    Write = 2
+    READ = 1,
+    WRITE = 2
 };
 
 enum class OpcodeDM : uint16_t {
-    Data = 3
+    DATA = 3
 };
 
 enum class OpcodeAM : uint16_t {
-    Ack = 4
+    ACK = 4
 };
 
 enum class OpcodeEM : uint16_t {
-    Error = 5
+    ERROR = 5
 };
 
 /*
@@ -56,10 +56,10 @@ struct requestMessage {
 struct dataMessage {
     OpcodeDM opcode;      // Opcode de 2 bytes
     uint16_t blockNumber; // Número do bloco
-    std::string data;     // Dados
+    const char* data;     // Dados
 
     // Construtor
-    dataMessage(OpcodeDM op, uint16_t block, const std::string& data): 
+    dataMessage(OpcodeDM op, uint16_t block, const char* data): 
         opcode(op), 
         blockNumber(block), 
         data(data) {}

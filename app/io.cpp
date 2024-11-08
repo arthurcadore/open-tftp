@@ -1,12 +1,34 @@
 #include "io.h"
 
 /*
-    Verifica se o arquivo existe, se é possivel abrir e retorna seu tamanho em bytes
+    Verifica se o arquivo existe, se é possivel abrir. 
 
     Parâmetros:
         - nomeArquivo: nome do arquivo a ser lido
 */
-int checkfile(const std::string& nomeArquivo){
+bool fileCheck(const std::string& nomeArquivo){
+
+    // Abre o arquivo em modo binário
+    std::ifstream arquivo(nomeArquivo, std::ios::in | std::ios::binary);
+
+    // Verifica se o arquivo foi aberto com sucesso
+    if (!arquivo) {
+        std::cerr << "Erro ao abrir o arquivo para leitura: " << nomeArquivo << std::endl;
+        return false;
+    }
+
+    // Fecha o arquivo
+    arquivo.close();
+
+    return true;
+}
+
+/*
+    Função para retornar o tamanho de um arquivo
+    Parâmetros:
+        - nomeArquivo: nome do arquivo a ser lido
+*/
+int fileLenght(const std::string& nomeArquivo){
 
     // Abre o arquivo em modo binário
     std::ifstream arquivo(nomeArquivo, std::ios::in | std::ios::binary);
@@ -28,17 +50,53 @@ int checkfile(const std::string& nomeArquivo){
 
     return tamanho;
 }
-/*
-    Função para escrever em um arquivo de texto o conteúdo de um buffer
 
+
+/*
+    Função para ler blocos de um arquivo e retornar o conteúdo em um char*
     Parâmetros:
         - nomeArquivo: nome do arquivo a ser lido
-        - buffer: ponteiro para o buffer que irá armazenar o conteúdo do arquivo
-        - tamanho: tamanho do buffer
+        - n: número do bloco a ser lido
+        - blockSize: tamanho do bloco a ser lido
 */
-void writefile(const char* buffer, std::size_t tamanho, const std::string& nomeArquivo) {
+char* readBlock(const std::string& nomeArquivo, int n, int blockSize){
+
     // Abre o arquivo em modo binário
-    std::ofstream arquivo(nomeArquivo, std::ios::out | std::ios::binary | std::ios::app);
+    std::ifstream arquivo(nomeArquivo, std::ios::in | std::ios::binary);
+
+    // Verifica se o arquivo foi aberto com sucesso
+    if (!arquivo) {
+        std::cerr << "Erro ao abrir o arquivo para leitura: " << nomeArquivo << std::endl;
+        return nullptr;
+    }
+
+    // Move o ponteiro do arquivo para o bloco n
+    arquivo.seekg(n * blockSize);
+
+    // Aloca memória para o bloco
+    char* bloco = new char[blockSize];
+
+    // Lê o bloco
+    arquivo.read(bloco, blockSize);
+
+    // Fecha o arquivo
+    arquivo.close();
+
+    return bloco;
+}
+
+/*
+    Função para escrever blocos de um arquivo
+    Parâmetros:
+        - nomeArquivo: nome do arquivo a ser escrito
+        - n: número do bloco a ser escrito
+        - blockSize: tamanho do bloco a ser escrito
+        - bloco: conteúdo do bloco a ser escrito
+*/
+void writeBlock(const std::string& nomeArquivo, int n, int blockSize, char* bloco){
+
+    // Abre o arquivo em modo binário
+    std::ofstream arquivo(nomeArquivo, std::ios::out | std::ios::binary);
 
     // Verifica se o arquivo foi aberto com sucesso
     if (!arquivo) {
@@ -46,72 +104,15 @@ void writefile(const char* buffer, std::size_t tamanho, const std::string& nomeA
         return;
     }
 
-    // Escreve o buffer no arquivo
-    arquivo.write(buffer, tamanho);
+    // Move o ponteiro do arquivo para o bloco n
+    arquivo.seekp(n * blockSize);
 
-    // Verifica se a escrita foi bem-sucedida
-    if (!arquivo) {
-        std::cerr << "Erro ao escrever no arquivo: " << nomeArquivo << std::endl;
-    }
+    // Escreve o bloco
+    arquivo.write(bloco, blockSize);
 
     // Fecha o arquivo
     arquivo.close();
 }
 
-/*
 
-    Função para ler de um arquivo de texto uma quantidade especifica de bytes e armazenar em um buffer
-
-    A função também faz a leitura conforme um offset especificado, assim podendo ler de 512 em 512 bytes
-
-    Parâmetros:
-        - nomeArquivo: nome do arquivo a ser lido
-        - buffer: ponteiro para o buffer que irá armazenar o conteúdo do arquivo
-        - tamanho: tamanho do buffer
-        - offset: offset para leitura do arquivo
-        - lenght: tamanho maximo do arquivo
-*/
-
-bool readfile(const std::string& nomeArquivo, char* buffer, std::size_t data_lenght, std::size_t offset, std::size_t file_lenght) {
-    // Abre o arquivo em modo binário
-    std::ifstream arquivo(nomeArquivo, std::ios::in | std::ios::binary);
-
-    // Verifica se o arquivo foi aberto com sucesso
-    if (!arquivo) {
-        std::cerr << "Erro ao abrir o arquivo para leitura: " << nomeArquivo << std::endl;
-        return false;
-    }
-
-    // Verifca se o offset é maior que o tamanho do arquivo
-    if (file_lenght >= offset + data_lenght) {
-
-        // Move o ponteiro do arquivo para o offset
-        // Pega um bloco de "data_lenght" bytes do arquivo e armazena no buffer
-        arquivo.seekg(offset);
-        arquivo.read(buffer, data_lenght);
-
-        // Verifica se a leitura foi bem-sucedida
-        if (!arquivo) {
-            std::cerr << "Erro ao ler o arquivo: " << nomeArquivo << std::endl;
-        }
-
-        arquivo.close();
-        return true;
-        
-    } else {
-
-        // Leva o ponteiro até o offset e lê o restante do arquivo
-        arquivo.seekg(offset);
-        arquivo.read(buffer, file_lenght - offset);
-
-        // Verifica se a leitura foi bem-sucedida
-        if (!arquivo) {
-            std::cerr << "Erro ao ler o arquivo: " << nomeArquivo << std::endl;
-        }
-    
-        arquivo.close();
-        return false;
-    }
-    
-}
 

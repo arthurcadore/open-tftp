@@ -9,6 +9,10 @@
 #include <iostream>
 #include <string>
 
+#include "messaging.h"
+#include "io.h"
+
+
 /*
     Converte uma string contendo um endereço IPv4 para uma estrutura sockaddr_in
     Parametros:
@@ -34,6 +38,7 @@ struct tftpclient {
     std::string ip;
     std::string port;
     sockaddr_in serverAddr;
+    int blockNumber = 0;
 
     /*
         Construtor

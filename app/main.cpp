@@ -4,6 +4,10 @@
   Laço do prompt de comando
 */
 void cli(const std::string& ip, const std::string& port) {
+
+  // instancia um cliente TFTP
+  tftpclient client(ip, port);
+  
   while (true) {
 
       // exibe o prompt de comando
@@ -39,9 +43,6 @@ void cli(const std::string& ip, const std::string& port) {
           continue;
         }
 
-        // instancia um cliente TFTP
-        tftpclient client(ip, port);
-
         // faz o download do arquivo
         client.download(argumento);
 
@@ -54,9 +55,6 @@ void cli(const std::string& ip, const std::string& port) {
           std::cout << "Argumento inválido" << std::endl;
           continue;
         }
-
-        // instancia um cliente TFTP
-        tftpclient client(ip, port);
 
         // faz o upload do arquivo
         client.upload(argumento);
