@@ -34,29 +34,6 @@ int stringToPort(const std::string& p) {
   }
 }
 
-void tftpclient::download(const std::string& filename){
-
-    std::cout << "Verificando acesso ao arquivo" << std::endl;
-    if (!fileCheck(filename)) {
-        return;
-    }
-    std::cout << "Servidor: " << ip << " na porta " << port << std::endl;
-
-    std::string buffer = readBlock(filename, 1, 512);
-
-    std::cout << "Buffer: " << buffer << std::endl;
-
-    dataMessage data(OpcodeDM::DATA, 1, buffer);
-    std::vector<uint8_t> serializedData = data.serialize();
-}
-
-void tftpclient::upload(const std::string& filename){
-
-    std::cout << "Verificando acesso ao arquivo" << std::endl;
-    if (!fileCheck(filename)) {
-        return;
-    }
-
-    std::cout << "Servidor: " << ip << " na porta " << port << std::endl;
-
+void upload(){
+    uploadCallback upload(this->serverAddr, this->filename);
 }

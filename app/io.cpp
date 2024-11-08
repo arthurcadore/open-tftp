@@ -77,6 +77,7 @@ char* readBlock(const std::string& nomeArquivo, int n, int blockSize){
     char* bloco = new char[blockSize];
 
     // Lê o bloco
+    // VERIFICAR SE LEU O BLOCO EM CASO PARCIAL
     arquivo.read(bloco, blockSize);
 
     // Fecha o arquivo

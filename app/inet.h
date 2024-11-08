@@ -8,9 +8,11 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <cmath>
 
 #include "messaging.h"
 #include "io.h"
+#include "poller.h"
 
 
 /*
@@ -37,8 +39,8 @@ int stringToPort(const std::string& port);
 struct tftpclient {
     std::string ip;
     std::string port;
+    std::string filename;
     sockaddr_in serverAddr;
-    int blockNumber = 0;
 
     /*
         Construtor
@@ -46,7 +48,7 @@ struct tftpclient {
             ip: endereço IP do servidor
             p: porta do servidor
     */
-    tftpclient(const std::string& ip, const std::string& p) : ip(ip), port(p) {
+    tftpclient(const std::string& ip, const std::string& p,  const std::string& filename) : ip(ip), port(p), filename(filename) {
 
         // Converte o endereço IP para uma estrutura sockaddr_in
         serverAddr = stringToIPv4(ip);
@@ -57,18 +59,42 @@ struct tftpclient {
     };
 
     /*
-        Função para fazer download de um arquivo
-        Parametros:
-            filename: nome do arquivo a ser baixado
-    */
-    void download(const std::string& filename);
-
-    /*
-        Função para fazer upload de um arquivo
+        Envia um arquivo para o servidor
         Parametros:
             filename: nome do arquivo a ser enviado
     */
-    void upload(const std::string& filename);
+    void upload();
+
+    void download();
+};
+
+class uploadCallback : public Callback {
+    sockaddr_in serverAddr;
+    std::string filename;
+    int blockNumber = 0;
+    int totalBlocks;    
+    int blocksize = 512;
+    int fileSize;
+    bool lastblock = false;
+
+    uploadCallback(sockaddr_in &serverAddr, const std::string& filename) : Callback(0, 0), serverAddr(serverAddr), filename(filename) {
+
+        fileCheck(filename);
+        int fileSize = fileLenght(filename);
+
+        // calcula o número total de blocos e arredonda para cima
+        totalBlocks = ceil(fileSize / blocksize);
+
+    }
+    public:
+        void handle(){ 
+        }
+
+        void handle_timeout(){
+            std::cout << "Timeout" << std::endl;
+        }
+
+        
 
 };
 

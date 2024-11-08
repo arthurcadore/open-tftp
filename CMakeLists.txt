@@ -14,7 +14,11 @@ add_executable(tftpclient.out
                app/io.h 
                app/io.cpp
                app/inet.h
-               app/inet.cpp) 
+               app/inet.cpp
+               libs/callback.cpp
+               libs/callback.h
+               libs/poller.cpp
+               libs/poller.h) 
 
 add_custom_target(run
     COMMAND tftpclient.out
