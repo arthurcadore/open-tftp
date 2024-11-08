@@ -1,6 +1,10 @@
 #include "messaging.h"
 
 
+#include <fstream>
+#include <iostream>
+
+
 std::vector<uint8_t> requestMessage::serialize() const {
 
     // Define o delimitador
@@ -46,7 +50,7 @@ std::vector<uint8_t> dataMessage::serialize() const {
     data.push_back(blockNumber & 0xFF);
 
     // Insere os dados da mensagem (vetor de char) ao final do vetor
-    data.insert(data.end(), data.begin(), data.end());
+    data.insert(data.end(), this->data.begin(), this->data.end());
 
     return data;
 }

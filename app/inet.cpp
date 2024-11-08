@@ -42,15 +42,15 @@ void tftpclient::download(const std::string& filename){
     }
     std::cout << "Servidor: " << ip << " na porta " << port << std::endl;
 
-    char* buffer = readBlock(filename, 0, 512);
+    std::string buffer = readBlock(filename, 0, 512);
 
-    //printf("Conteúdo do arquivo: %s\n", buffer);
+    //printf("Conteúdo do arquivo: %s\n", buffer.c_str());
 
-    //dataMessage data(OpcodeDM::DATA, 1, buffer);
-    //std::vector<uint8_t> serializedData = data.serialize();
+    dataMessage data(OpcodeDM::DATA, 1, buffer);
+    std::vector<uint8_t> serializedData = data.serialize();
 
     // imprimir o tamanho do vetor
-    //std::cout << "Tamanho do vetor: " << serializedData.size() << std::endl;
+    std::cout << "Tamanho do vetor: " << serializedData.size() << std::endl;
 }
 
 void tftpclient::upload(const std::string& filename){
