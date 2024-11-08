@@ -40,10 +40,6 @@ As instruções para as estapas deste projeto serão fornecidas no [material de 
 
 ### Máquina de estado envio ###
 ```mermaid
----
-config:
-  layout: elk
----
 stateDiagram
   direction LR
   [*] --> Init
@@ -64,10 +60,6 @@ stateDiagram
 ### Máquina de estado recepção ###
 
 ```mermaid
----
-config:
-  layout: elk
----
 stateDiagram
   direction LR
   [*] --> Init
