@@ -12,7 +12,7 @@
 
 #include "messaging.h"
 #include "io.h"
-#include "poller.h"
+#include "../libs/poller.h"
 
 
 /*
@@ -63,7 +63,7 @@ struct tftpclient {
         Parametros:
             filename: nome do arquivo a ser enviado
     */
-    void upload();
+    void up();
 
     void download();
 };
@@ -88,6 +88,12 @@ class uploadCallback : public Callback {
     }
     public:
         void handle(){ 
+
+            // cria a mensagem de WRQ e envia para o servidor
+            requestMessage msg(OpcodeRM::WRITE, this->filename);
+
+            // envia a mensagem para o servidor
+            sendto(fd, msg.serialize().data(), msg.serialize().size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
         }
 
         void handle_timeout(){

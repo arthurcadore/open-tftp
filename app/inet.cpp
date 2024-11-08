@@ -1,5 +1,6 @@
 #include "inet.h"
 
+
 sockaddr_in stringToIPv4(const std::string& ipAddress) {
 
     // Cria uma estrutura sockaddr_in para armazenar o endereço IPv4
@@ -34,6 +35,11 @@ int stringToPort(const std::string& p) {
   }
 }
 
-void upload(){
+void up(){
     uploadCallback upload(this->serverAddr, this->filename);
+
+    Poller poller;
+    poller.adiciona(&upload);
+
+    poller.despache();
 }

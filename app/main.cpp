@@ -4,10 +4,6 @@
   Laço do prompt de comando
 */
 void cli(const std::string& ip, const std::string& port) {
-
-  // instancia um cliente TFTP
-  tftpclient client(ip, port);
-  
   while (true) {
 
       // exibe o prompt de comando
@@ -44,7 +40,7 @@ void cli(const std::string& ip, const std::string& port) {
         }
 
         // faz o download do arquivo
-        client.download(argumento);
+        tftpclient client(ip, port, argumento);
 
 
       // verifica se o comando é "put" e chama a função upload
@@ -54,10 +50,9 @@ void cli(const std::string& ip, const std::string& port) {
         if (argumento.empty()) {
           std::cout << "Argumento inválido" << std::endl;
           continue;
-        }
-
-        // faz o upload do arquivo
-        client.upload(argumento);
+        } 
+        // instancia um cliente TFTP
+        tftpclient client(ip, port, argumento);
 
       // comando inválido
       } else {
