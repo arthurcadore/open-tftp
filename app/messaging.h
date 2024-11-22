@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 
 /*
 Definição dos opcodes para cada tipo de mensagem. 

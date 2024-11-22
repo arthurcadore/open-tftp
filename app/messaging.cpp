@@ -1,6 +1,5 @@
 #include "messaging.h"
 
-
 #include <fstream>
 #include <iostream>
 

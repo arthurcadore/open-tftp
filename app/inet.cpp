@@ -36,10 +36,5 @@ int stringToPort(const std::string& p) {
 }
 
 void up(){
-    uploadCallback upload(this->serverAddr, this->filename);
-
-    Poller poller;
-    poller.adiciona(&upload);
-
-    poller.despache();
+    //TODO
 }
