@@ -32,6 +32,7 @@ std::vector<uint8_t> requestMessage::serialize() const {
     return data;
 }
 
+
 std::vector<uint8_t> dataMessage::serialize() const {
 
     // define um vetor em formato de dados octeto
@@ -53,6 +54,37 @@ std::vector<uint8_t> dataMessage::serialize() const {
 
     return data;
 }
+
+// função para deserializar o pacote
+dataMessage dataMessage::deserialize(char buffer[], int comprimento) {
+    
+        // Verifica se o comprimento do buffer é menor que 4
+        if (comprimento < 4) {
+            throw std::runtime_error("Tamanho do buffer menor que 4");
+        }
+    
+        // Converte os dois primeiros bytes do buffer para um inteiro de 16 bits
+        uint16_t opcodeInt = (buffer[0] << 8) | buffer[1];
+    
+        // Converte o inteiro de 16 bits para um OpcodeDM
+        OpcodeDM opcode = static_cast<OpcodeDM>(opcodeInt);
+    
+        // Converte os dois bytes seguintes para um inteiro de 16 bits
+        uint16_t blockNumber = (buffer[2] << 8) | buffer[3];
+    
+        // Cria um vetor de char com os dados da mensagem
+        std::vector<char> data(buffer + 4, buffer + comprimento);
+    
+        // Retorna um objeto dataMessage com os dados deserializados
+        return dataMessage(opcode, blockNumber, std::string(data.begin(), data.end()));
+}
+
+// função para imprimir o conteúdo da mensagem
+std::string dataMessage::printData() {
+    // converte para string e a retorna
+    return std::string(data.begin(), data.end());
+}
+
 
 std::vector<uint8_t> ackMessage::serialize() const {
 

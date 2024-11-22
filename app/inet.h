@@ -123,7 +123,7 @@ class uploadCallback : public Callback {
 class downloadCallback : public Callback {
     sockaddr_in serverAddr;
     std::string filename;
-    int blockNumber = 0;
+    int blockNumber = 1;
     int totalBlocks;    
     int blocksize = 512;
     int fileSize;
@@ -140,20 +140,31 @@ class downloadCallback : public Callback {
     
     void handle(){ 
 
-     char buffer[516];
+    char buffer[516];
      
-          socklen_t addrLen = sizeof(serverAddr);
-          ssize_t recvBytes = recvfrom(fd, buffer, sizeof(buffer), 0, (sockaddr*)&serverAddr, &addrLen);
+    socklen_t addrLen = sizeof(serverAddr);
+    ssize_t recvBytes = recvfrom(fd, buffer, sizeof(buffer), 0, (sockaddr*)&serverAddr, &addrLen);
 
-          std::cout << "Recebendo " << recvBytes << " bytes" << std::endl;
+    // std::cout << "Recebendo " << recvBytes << " bytes" << std::endl;
 
-          if (recvBytes < 0) {
-              throw std::runtime_error("Erro ao receber a mensagem");
-          }
+    if (recvBytes < 0) {
+        throw std::runtime_error("Erro ao receber a mensagem");
+    }
 
-          // imprime a mensagem recebida no terminal para visualização: 
+    // converte o buffer para um dataMessage    
+    dataMessage msg = dataMessage::deserialize(buffer, recvBytes);
 
-            std::cout << "Mensagem recebida: " << std::string(buffer, recvBytes) << std::endl;
+    std::cout << msg.printData() << std::endl;
+
+    // cria um ackMessage
+    ackMessage ack(OpcodeAM::ACK, blockNumber);
+
+    // envia o ack para o servidor
+    sendto(fd, ack.serialize().data(), ack.serialize().size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
+
+    // incrementa o número do bloco
+    blockNumber++;
+
     }
 
     void handle_timeout(){

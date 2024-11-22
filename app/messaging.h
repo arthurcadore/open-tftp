@@ -5,6 +5,7 @@
 #include <vector>
 #include <cstdint>
 
+
 /*
 Definição dos opcodes para cada tipo de mensagem. 
 */
@@ -67,6 +68,12 @@ struct dataMessage {
 
     // Função para serializar o pacote em um vetor de bytes
     std::vector<uint8_t> serialize() const;
+
+    // Função para deserializar o pacote
+    static dataMessage deserialize(char buffer[], int comprimento);
+
+    // Função para imprimir o conteúdo de data;
+    std::string printData();
 };
 
 /*
