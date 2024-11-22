@@ -41,6 +41,7 @@ void cli(const std::string& ip, const std::string& port) {
 
         // faz o download do arquivo
         tftpclient client(ip, port, argumento);
+        client.download();
 
 
       // verifica se o comando é "put" e chama a função upload
@@ -53,7 +54,8 @@ void cli(const std::string& ip, const std::string& port) {
         } 
         // instancia um cliente TFTP
         tftpclient client(ip, port, argumento);
-
+        client.upload();
+        
       // comando inválido
       } else {
         std::cout << "Comando inválido" << std::endl;

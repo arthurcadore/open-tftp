@@ -37,6 +37,7 @@ int stringToPort(const std::string& port);
     Classe para implementar um cliente TFTP
 */
 struct tftpclient {
+
     std::string ip;
     std::string port;
     std::string filename;
@@ -55,6 +56,8 @@ struct tftpclient {
 
         // Converte a porta para um inteiro e armazena na estrutura sockaddr_in
         int port = stringToPort(p);
+
+        // utiliza a função htons para converter a porta para o formato de rede
         serverAddr.sin_port = htons(port);
     };
 
@@ -63,7 +66,7 @@ struct tftpclient {
         Parametros:
             filename: nome do arquivo a ser enviado
     */
-    void up();
+    void upload();
 
     void download();
 };
@@ -77,7 +80,52 @@ class uploadCallback : public Callback {
     int fileSize;
     bool lastblock = false;
 
+    public:
     uploadCallback(sockaddr_in &serverAddr, const std::string& filename) : Callback(0, 0), serverAddr(serverAddr), filename(filename) {
+
+        if(fileCheck(filename)){
+            int fileSize = fileLenght(filename);
+
+            // calcula o número total de blocos e arredonda para cima
+            totalBlocks = ceil(fileSize / blocksize);
+            std::cout << "File size: " << totalBlocks << " Blocks" << std::endl;
+        }
+
+        disable_timeout();
+    }
+    
+    void handle(){ 
+
+            // cria a mensagem de WRQ e envia para o servidor
+            requestMessage msg(OpcodeRM::WRITE, this->filename);
+
+            std::cout << "Sending WRQ" << std::endl;
+
+            std::cout << "msg: " << std::string(msg.serialize().begin(), msg.serialize().end()) << std::endl;
+
+            // envia a mensagem para o servidor
+            sendto(fd, msg.serialize().data(), msg.serialize().size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
+    }
+
+    void handle_timeout(){
+            std::cout << "Timeout" << std::endl;
+    }
+
+    
+};
+
+
+class downloadCallback : public Callback {
+    sockaddr_in serverAddr;
+    std::string filename;
+    int blockNumber = 0;
+    int totalBlocks;    
+    int blocksize = 512;
+    int fileSize;
+    bool lastblock = false;
+
+    public:
+    downloadCallback(sockaddr_in &serverAddr, const std::string& filename) : Callback(0, 0), serverAddr(serverAddr), filename(filename) {
 
         fileCheck(filename);
         int fileSize = fileLenght(filename);
@@ -85,25 +133,25 @@ class uploadCallback : public Callback {
         // calcula o número total de blocos e arredonda para cima
         totalBlocks = ceil(fileSize / blocksize);
 
+        disable_timeout();
+
     }
-    public:
-        void handle(){ 
+    
+    void handle(){ 
 
             // cria a mensagem de WRQ e envia para o servidor
             requestMessage msg(OpcodeRM::WRITE, this->filename);
 
             // envia a mensagem para o servidor
             sendto(fd, msg.serialize().data(), msg.serialize().size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
-        }
+    }
 
-        void handle_timeout(){
+    void handle_timeout(){
             std::cout << "Timeout" << std::endl;
-        }
+    }
 
-        
-
+    
 };
-
 
 
 #endif
