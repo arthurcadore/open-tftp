@@ -65,9 +65,10 @@ dataMessage dataMessage::deserialize(char buffer[], int comprimento) {
     
         // Converte os dois primeiros bytes do buffer para um inteiro de 16 bits
         uint16_t opcodeInt = (buffer[0] << 8) | buffer[1];
-    
-        // Converte o inteiro de 16 bits para um OpcodeDM
-        OpcodeDM opcode = static_cast<OpcodeDM>(opcodeInt);
+
+        if(static_cast<OpcodeDM>(opcodeInt) != OpcodeDM::DATA) {
+            throw std::runtime_error("Opcode inválido");
+        }
     
         // Converte os dois bytes seguintes para um inteiro de 16 bits
         uint16_t blockNumber = (buffer[2] << 8) | buffer[3];
@@ -76,7 +77,7 @@ dataMessage dataMessage::deserialize(char buffer[], int comprimento) {
         std::vector<char> data(buffer + 4, buffer + comprimento);
     
         // Retorna um objeto dataMessage com os dados deserializados
-        return dataMessage(opcode, blockNumber, std::string(data.begin(), data.end()));
+        return dataMessage(OpcodeDM::DATA, blockNumber, std::string(data.begin(), data.end()));
 }
 
 // função para imprimir o conteúdo da mensagem
@@ -131,4 +132,30 @@ std::vector<uint8_t> errorMessage::serialize() const {
     data.push_back(delimiter);
 
     return data;
+}
+
+// função para deserializar o pacote
+errorMessage errorMessage::deserialize(char buffer[], int comprimento) {
+        // Verifica se o comprimento do buffer é menor que 4
+        if (comprimento < 4) {
+            throw std::runtime_error("Tamanho do buffer menor que 4");
+        }
+    
+        // Converte os dois primeiros bytes do buffer para um inteiro de 16 bits
+        uint16_t opcodeInt = (buffer[0] << 8) | buffer[1];
+    
+        // Converte os dois bytes seguintes para um inteiro de 16 bits
+        uint16_t errorCode = (buffer[2] << 8) | buffer[3];
+    
+        // Cria um vetor de char com os dados da mensagem
+        std::vector<char> errMsg(buffer + 4, buffer + comprimento);
+    
+        // Retorna um objeto errorMessage com os dados deserializados
+        return errorMessage(OpcodeEM::ERROR, errorCode, std::string(errMsg.begin(), errMsg.end()));
+}
+
+// função para imprimir o conteúdo da mensagem
+std::string errorMessage::printData() {
+    // converte para string e a retorna
+    return std::string(errMsg.begin(), errMsg.end());
 }

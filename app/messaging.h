@@ -114,6 +114,12 @@ struct errorMessage {
 
     // Função para serializar o pacote em um vetor de bytes
     std::vector<uint8_t> serialize() const;
+
+    // Função para deserializar o pacote
+    static errorMessage deserialize(char buffer[], int comprimento);
+
+    // Função para imprimir o conteúdo de data;
+    std::string printData();
 };
 
 #endif
