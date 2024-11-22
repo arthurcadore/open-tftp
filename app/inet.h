@@ -34,6 +34,13 @@ sockaddr_in stringToIPv4(const std::string& ipAddress);
 int stringToPort(const std::string& port);
 
 /*
+    Cria um socket
+    Retorno:
+        Descritor do socket
+*/  
+int createSocket();
+
+/*
     Classe para implementar um cliente TFTP
 */
 struct tftpclient {
@@ -42,6 +49,7 @@ struct tftpclient {
     std::string port;
     std::string filename;
     sockaddr_in serverAddr;
+    int sockfd;
 
     /*
         Construtor
@@ -59,6 +67,9 @@ struct tftpclient {
 
         // utiliza a função htons para converter a porta para o formato de rede
         serverAddr.sin_port = htons(port);
+
+        // cria o socket
+        sockfd = createSocket();
     };
 
     /*
@@ -79,9 +90,10 @@ class uploadCallback : public Callback {
     int blocksize = 512;
     int fileSize;
     bool lastblock = false;
+    int sockfd;
 
     public:
-    uploadCallback(sockaddr_in &serverAddr, const std::string& filename) : Callback(0, 0), serverAddr(serverAddr), filename(filename) {
+    uploadCallback(sockaddr_in &serverAddr, int sockfd, const std::string& filename) : Callback(0, 0), serverAddr(serverAddr), filename(filename), sockfd(sockfd) {
 
         if(fileCheck(filename)){
             int fileSize = fileLenght(filename);
@@ -95,16 +107,9 @@ class uploadCallback : public Callback {
     }
     
     void handle(){ 
+        char buffer[516];
 
-            // cria a mensagem de WRQ e envia para o servidor
-            requestMessage msg(OpcodeRM::WRITE, this->filename);
 
-            std::cout << "Sending WRQ" << std::endl;
-
-            std::cout << "msg: " << std::string(msg.serialize().begin(), msg.serialize().end()) << std::endl;
-
-            // envia a mensagem para o servidor
-            sendto(fd, msg.serialize().data(), msg.serialize().size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
     }
 
     void handle_timeout(){
@@ -123,34 +128,37 @@ class downloadCallback : public Callback {
     int blocksize = 512;
     int fileSize;
     bool lastblock = false;
+    int sockfd;
 
     public:
-    downloadCallback(sockaddr_in &serverAddr, const std::string& filename) : Callback(0, 0), serverAddr(serverAddr), filename(filename) {
-
-        fileCheck(filename);
-        int fileSize = fileLenght(filename);
-
-        // calcula o número total de blocos e arredonda para cima
-        totalBlocks = ceil(fileSize / blocksize);
+    downloadCallback(sockaddr_in &serverAddr, int sockfd, const std::string& filename) : Callback(0, 0), serverAddr(serverAddr), filename(filename), sockfd(sockfd) {
 
         disable_timeout();
 
+        this->fd = sockfd;
     }
     
     void handle(){ 
 
-            // cria a mensagem de WRQ e envia para o servidor
-            requestMessage msg(OpcodeRM::WRITE, this->filename);
+     char buffer[516];
+     
+          socklen_t addrLen = sizeof(serverAddr);
+          ssize_t recvBytes = recvfrom(fd, buffer, sizeof(buffer), 0, (sockaddr*)&serverAddr, &addrLen);
 
-            // envia a mensagem para o servidor
-            sendto(fd, msg.serialize().data(), msg.serialize().size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
+          std::cout << "Recebendo " << recvBytes << " bytes" << std::endl;
+
+          if (recvBytes < 0) {
+              throw std::runtime_error("Erro ao receber a mensagem");
+          }
+
+          // imprime a mensagem recebida no terminal para visualização: 
+
+            std::cout << "Mensagem recebida: " << std::string(buffer, recvBytes) << std::endl;
     }
 
     void handle_timeout(){
             std::cout << "Timeout" << std::endl;
     }
-
-    
 };
 
 
