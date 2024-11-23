@@ -28,7 +28,7 @@ int fileLenght(const std::string& nomeArquivo);
         - n: número do bloco a ser lido
         - blockSize: tamanho do bloco a ser lido
 */
-char* readBlock(const std::string& nomeArquivo, int n, int blockSize);
+char* readBlock(const std::string& nomeArquivo, int n, int blockSize, int lenght);
 
 /*
     Função para escrever blocos em um arquivo

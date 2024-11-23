@@ -59,7 +59,14 @@ int fileLenght(const std::string& nomeArquivo){
         - n: número do bloco a ser lido
         - blockSize: tamanho do bloco a ser lido
 */
-char* readBlock(const std::string& nomeArquivo, int n, int blockSize){
+char* readBlock(const std::string& nomeArquivo, int n, int blockSize, int lenght){
+
+    if(lenght == 0){
+        // cria uma string vazia
+        char* bloco = new char[1];
+        bloco[0] = '\0';
+        return bloco;
+    }
 
     // Abre o arquivo em modo binário
     std::ifstream arquivo(nomeArquivo, std::ios::in | std::ios::binary);
@@ -74,17 +81,17 @@ char* readBlock(const std::string& nomeArquivo, int n, int blockSize){
     arquivo.seekg(n * blockSize);
 
     // Aloca memória para o bloco
-    char* bloco = new char[blockSize];
+    char* bloco = new char[lenght];
 
-    // Lê o bloco
-    // VERIFICAR SE LEU O BLOCO EM CASO PARCIAL
-    arquivo.read(bloco, blockSize);
-
+    // Lê o bloco (tenta pegar blockSize bytes, caso não consiga, pega o que conseguir)
+    arquivo.read(bloco, lenght);
+    
     // Fecha o arquivo
     arquivo.close();
 
     return bloco;
 }
+
 
 /*
     Função para escrever blocos em um arquivo
