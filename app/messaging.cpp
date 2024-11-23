@@ -106,6 +106,34 @@ std::vector<uint8_t> ackMessage::serialize() const {
     return data;
 }
 
+// função para deserializar o pacote
+ackMessage ackMessage::deserialize(char buffer[], int comprimento) {
+    
+        // Verifica se o comprimento do buffer é menor que 4
+        if (comprimento < 4) {
+            throw std::runtime_error("Tamanho do buffer menor que 4");
+        }
+    
+        // Converte os dois primeiros bytes do buffer para um inteiro de 16 bits
+        uint16_t opcodeInt = (buffer[0] << 8) | buffer[1];
+
+        if(static_cast<OpcodeAM>(opcodeInt) != OpcodeAM::ACK) {
+            throw std::runtime_error("Opcode inválido");
+        }
+    
+        // Converte os dois bytes seguintes para um inteiro de 16 bits
+        uint16_t blockNumber = (buffer[2] << 8) | buffer[3];
+    
+        // Retorna um objeto ackMessage com os dados deserializados
+        return ackMessage(OpcodeAM::ACK, blockNumber);
+}
+
+// função para imprimir o nṹmero do bloco
+std::string ackMessage::printBN() {
+    // converte para string e a retorna
+    return std::to_string(blockNumber);
+}
+
 std::vector<uint8_t> errorMessage::serialize() const {
 
     // Define o delimitador
