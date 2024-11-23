@@ -67,7 +67,7 @@ dataMessage dataMessage::deserialize(char buffer[], int comprimento) {
         uint16_t opcodeInt = (buffer[0] << 8) | buffer[1];
 
         if(static_cast<OpcodeDM>(opcodeInt) != OpcodeDM::DATA) {
-            throw std::runtime_error("Opcode inválido");
+            throw std::runtime_error("Opcode inválido recebido: " + std::to_string(opcodeInt) + ", Esperado: " + std::to_string(static_cast<uint16_t>(OpcodeDM::DATA)));
         }
     
         // Converte os dois bytes seguintes para um inteiro de 16 bits
@@ -124,7 +124,7 @@ ackMessage ackMessage::deserialize(char buffer[], int comprimento) {
         uint16_t opcodeInt = (buffer[0] << 8) | buffer[1];
 
         if(static_cast<OpcodeAM>(opcodeInt) != OpcodeAM::ACK) {
-            throw std::runtime_error("Opcode inválido");
+            throw std::runtime_error("Opcode inválido recebido: " + std::to_string(opcodeInt) + ", Esperado: " + std::to_string(static_cast<uint16_t>(OpcodeAM::ACK)));
         }
     
         // Converte os dois bytes seguintes para um inteiro de 16 bits

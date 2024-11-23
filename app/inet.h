@@ -206,7 +206,6 @@ class downloadCallback : public Callback {
     try{
         // converte o buffer para um dataMessage   
         dataMessage msg = dataMessage::deserialize(buffer, recvBytes);
-        std::cout << msg.printData() << std::endl;
 
         blockNumber = msg.printBN();
 
