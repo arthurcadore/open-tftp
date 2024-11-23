@@ -57,7 +57,8 @@ int fileLenght(const std::string& nomeArquivo){
     Parâmetros:
         - nomeArquivo: nome do arquivo a ser lido
         - n: número do bloco a ser lido
-        - blockSize: tamanho do bloco a ser lido
+        - blockSize: tamanho do bloco (referencia)
+        - lenght: quantidade de bytes a serem lidos
 */
 char* readBlock(const std::string& nomeArquivo, int n, int blockSize, int lenght){
 
