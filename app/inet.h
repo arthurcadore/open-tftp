@@ -157,7 +157,11 @@ class downloadCallback : public Callback {
     try{
         // converte o buffer para um dataMessage   
         dataMessage msg = dataMessage::deserialize(buffer, recvBytes);
-    std::cout << msg.printData() << std::endl;
+        std::cout << msg.printData() << std::endl;
+
+        // escreve o bloco no arquivo
+        writeBlock(this->filename, msg.printData());
+
     } catch (std::runtime_error e) {
         std::cout << e.what() << std::endl;
         // cria uma mensagem de erro
@@ -166,6 +170,7 @@ class downloadCallback : public Callback {
         finish();
         error = true;
     }
+
     // cria um ackMessage
     ackMessage ack(OpcodeAM::ACK, blockNumber);
 

@@ -87,17 +87,15 @@ char* readBlock(const std::string& nomeArquivo, int n, int blockSize){
 }
 
 /*
-    Função para escrever blocos de um arquivo
+    Função para escrever blocos em um arquivo
     Parâmetros:
         - nomeArquivo: nome do arquivo a ser escrito
-        - n: número do bloco a ser escrito
-        - blockSize: tamanho do bloco a ser escrito
-        - bloco: conteúdo do bloco a ser escrito
+        - block: bloco recebido para ser escrito (concatenado ao arquivo), do tipo string
 */
-void writeBlock(const std::string& nomeArquivo, int n, int blockSize, char* bloco){
+void writeBlock(const std::string& nomeArquivo, const std::string& block){
 
     // Abre o arquivo em modo binário
-    std::ofstream arquivo(nomeArquivo, std::ios::out | std::ios::binary);
+    std::ofstream arquivo(nomeArquivo, std::ios::out | std::ios::binary | std::ios::app);
 
     // Verifica se o arquivo foi aberto com sucesso
     if (!arquivo) {
@@ -105,11 +103,8 @@ void writeBlock(const std::string& nomeArquivo, int n, int blockSize, char* bloc
         return;
     }
 
-    // Move o ponteiro do arquivo para o bloco n
-    arquivo.seekp(n * blockSize);
-
-    // Escreve o bloco
-    arquivo.write(bloco, blockSize);
+    // Escreve o bloco no arquivo
+    arquivo.write(block.c_str(), block.size());
 
     // Fecha o arquivo
     arquivo.close();

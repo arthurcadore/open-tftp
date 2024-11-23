@@ -64,7 +64,6 @@ void tftpclient::upload()
   // envia a mensagem para o servidor
   sendto(this->sockfd, msg.serialize().data(), msg.serialize().size(), 0, (sockaddr *)&serverAddr, sizeof(serverAddr));
 
-
   // ========================================
 
   // cria um callback para o upload

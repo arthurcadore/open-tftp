@@ -34,10 +34,8 @@ char* readBlock(const std::string& nomeArquivo, int n, int blockSize);
     Função para escrever blocos em um arquivo
     Parâmetros:
         - nomeArquivo: nome do arquivo a ser escrito
-        - n: número do bloco a ser escrito
-        - blockSize: tamanho do bloco a ser escrito
-        - bloco: conteúdo do bloco a ser escrito
+        - block: bloco recebido para ser escrito (concatenado ao arquivo), do tipo string
 */
-void writeBlock(const std::string& nomeArquivo, int n, int blockSize, char* bloco);
+void writeBlock(const std::string& nomeArquivo, const std::string& block);
 
 #endif

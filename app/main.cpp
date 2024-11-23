@@ -7,7 +7,7 @@ void cli(const std::string& ip, const std::string& port) {
   while (true) {
 
       // exibe o prompt de comando
-      std::cout << "ftp > ";
+      std::cout << "tftp > ";
       std::string comando;
 
       // lê a linha de comando
@@ -55,7 +55,7 @@ void cli(const std::string& ip, const std::string& port) {
         // instancia um cliente TFTP
         tftpclient client(ip, port, argumento);
         client.upload();
-        
+
       // comando inválido
       } else {
         std::cout << "Comando inválido" << std::endl;
