@@ -86,6 +86,12 @@ std::string dataMessage::printData() {
     return std::string(data.begin(), data.end());
 }
 
+// função para imprimir o número do bloco
+int dataMessage::printBN() {
+    // converte para string e a retorna
+    return blockNumber;
+}
+
 
 std::vector<uint8_t> ackMessage::serialize() const {
 

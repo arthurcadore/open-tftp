@@ -74,6 +74,7 @@ struct dataMessage {
 
     // Função para imprimir o conteúdo de data;
     std::string printData();
+    int printBN();
 };
 
 /*

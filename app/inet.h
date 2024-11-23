@@ -208,6 +208,8 @@ class downloadCallback : public Callback {
         dataMessage msg = dataMessage::deserialize(buffer, recvBytes);
         std::cout << msg.printData() << std::endl;
 
+        blockNumber = msg.printBN();
+
         // escreve o bloco no arquivo
         writeBlock(this->filename, msg.printData());
 
