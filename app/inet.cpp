@@ -65,7 +65,7 @@ void tftpclient::upload()
   sendto(this->sockfd, msg.serialize().data(), msg.serialize().size(), 0, (sockaddr *)&serverAddr, sizeof(serverAddr));
 
   // cria um callback para o upload
-  uploadCallback cb(this->serverAddr, this->sockfd, this->filename);
+  uploadCallback cb(this->serverAddr, this->sockfd, this->filename, this->timeout);
 
   // cria um poller
   Poller poller;
@@ -89,7 +89,7 @@ void tftpclient::download()
   sendto(this->sockfd, msg.serialize().data(), msg.serialize().size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
 
   // cria um callback para o download
-  downloadCallback cb(this->serverAddr, this->sockfd, this->filename);
+  downloadCallback cb(this->serverAddr, this->sockfd, this->filename, this->timeout);
 
   // cria um poller
   Poller poller;
@@ -100,3 +100,16 @@ void tftpclient::download()
   // despacha o poller
   poller.despache();
 };
+
+/*
+  Função para receber um socket e retornar uma string com o endereço IP de origem
+
+  Parâmetros:
+    - socket: descritor do socket
+*/
+
+std::string getIP(sockaddr_in socket) {
+  char ip[INET_ADDRSTRLEN];
+  inet_ntop(AF_INET, &(socket.sin_addr), ip, INET_ADDRSTRLEN);
+  return std::string(ip);
+}

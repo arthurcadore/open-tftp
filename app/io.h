@@ -38,4 +38,11 @@ char* readBlock(const std::string& nomeArquivo, int n, int blockSize, int lenght
 */
 void writeBlock(const std::string& nomeArquivo, const std::string& block);
 
+/*
+    Função para deletar arquivo em caso de timeout
+    Parâmetros:
+        - nomeArquivo: nome do arquivo a ser deletado
+*/
+void deleteFile(const std::string& nomeArquivo);
+
 #endif

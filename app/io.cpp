@@ -13,8 +13,7 @@ bool fileCheck(const std::string& nomeArquivo){
 
     // Verifica se o arquivo foi aberto com sucesso
     if (!arquivo) {
-        std::cerr << "Erro ao abrir o arquivo para leitura: " << nomeArquivo << std::endl;
-        return false;
+        throw std::runtime_error("Erro ao abrir o arquivo para leitura: " + nomeArquivo);
     }
 
     // Fecha o arquivo
@@ -32,12 +31,6 @@ int fileLenght(const std::string& nomeArquivo){
 
     // Abre o arquivo em modo binário
     std::ifstream arquivo(nomeArquivo, std::ios::in | std::ios::binary);
-
-    // Verifica se o arquivo foi aberto com sucesso
-    if (!arquivo) {
-        std::cerr << "Erro ao abrir o arquivo para leitura: " << nomeArquivo << std::endl;
-        return -1;
-    }
 
     // Move o ponteiro do arquivo para o final
     arquivo.seekg(0, std::ios::end);
@@ -71,12 +64,6 @@ char* readBlock(const std::string& nomeArquivo, int n, int blockSize, int lenght
 
     // Abre o arquivo em modo binário
     std::ifstream arquivo(nomeArquivo, std::ios::in | std::ios::binary);
-
-    // Verifica se o arquivo foi aberto com sucesso
-    if (!arquivo) {
-        std::cerr << "Erro ao abrir o arquivo para leitura: " << nomeArquivo << std::endl;
-        return nullptr;
-    }
 
     // Move o ponteiro do arquivo para o bloco n
     arquivo.seekg(n * blockSize);
@@ -118,5 +105,15 @@ void writeBlock(const std::string& nomeArquivo, const std::string& block){
     arquivo.close();
 }
 
-
+/*
+    Função para deletar arquivo em caso de timeout
+    Parâmetros:
+        - nomeArquivo: nome do arquivo a ser deletado
+*/
+void deleteFile(const std::string& nomeArquivo){
+    // Deleta o arquivo
+    if (remove(nomeArquivo.c_str()) != 0) {
+        std::cerr << "Erro ao deletar o arquivo: " << nomeArquivo << std::endl;
+    }
+}
 

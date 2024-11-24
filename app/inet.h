@@ -41,6 +41,15 @@ int stringToPort(const std::string& port);
 int createSocket();
 
 /*
+    Retorna o endereço IP de um socket
+    Parametros:
+        sockfd: descritor do socket
+    Retorno:
+        Endereço IP do socket
+*/
+std::string getIP(sockaddr_in sockfd);
+
+/*
     Classe para implementar um cliente TFTP
 */
 struct tftpclient {
@@ -50,6 +59,7 @@ struct tftpclient {
     std::string filename;
     sockaddr_in serverAddr;
     int sockfd;
+    long timeout;
 
     /*
         Construtor
@@ -57,7 +67,7 @@ struct tftpclient {
             ip: endereço IP do servidor
             p: porta do servidor
     */
-    tftpclient(const std::string& ip, const std::string& p,  const std::string& filename) : ip(ip), port(p), filename(filename) {
+    tftpclient(const std::string& ip, const std::string& p,  const std::string& filename, const long& timeout) : ip(ip), port(p), filename(filename), timeout(timeout){
 
         // Converte o endereço IP para uma estrutura sockaddr_in
         serverAddr = stringToIPv4(ip);
@@ -95,23 +105,33 @@ class uploadCallback : public Callback {
     int lastBlocksize;
 
     public:
-    uploadCallback(sockaddr_in &serverAddr, int sockfd, const std::string& filename) : Callback(0, 0), serverAddr(serverAddr), filename(filename), sockfd(sockfd) {
+    uploadCallback(sockaddr_in &serverAddr, int sockfd, const std::string& filename, long timeout) : Callback(sockfd, timeout), serverAddr(serverAddr), filename(filename), sockfd(sockfd) {
 
         this->fd = sockfd;
 
-        if(fileCheck(filename)){
-            int fileSize = fileLenght(filename);
+        try{
+            // verifica se o arquivo existe e se é possível abri-lo
+            if(fileCheck(filename)){
 
-            // calcula o número total de blocos e arredonda para cima
-            totalBlocks = ceil(fileSize / blocksize) + 1;
-            // std::cout << "File size: " << totalBlocks << " Blocks" << std::endl;
+                // obtém o tamanho do arquivo
+                int fileSize = fileLenght(filename);
 
-            // calcula o tamanho do último segmento em bytes
-            lastBlocksize = fileSize % blocksize;
-            // std::cout << "Last segment length: " << lastBlocksize << " Bytes" << std::endl;
+                // calcula o número total de blocos e arredonda para cima
+                totalBlocks = ceil(fileSize / blocksize) + 1;
+                // std::cout << "File size: " << totalBlocks << " Blocks" << std::endl;
+
+                // calcula o tamanho do último segmento em bytes
+                lastBlocksize = fileSize % blocksize;
+                // std::cout << "Last segment length: " << lastBlocksize << " Bytes" << std::endl;
+            } 
+        } catch(std::runtime_error e){
+
+            // cria uma mensagem de erro
+            std::cout << e.what() << std::endl;
+
+            // finaliza a transferência
+            finish();
         }
-
-        disable_timeout();
     }
     
     void handle(){ 
@@ -162,7 +182,8 @@ class uploadCallback : public Callback {
     }
 
     void handle_timeout(){
-            std::cout << "Timeout" << std::endl;
+            std::cout << "Timeout na sessão com o servidor: " << getIP(this->serverAddr) << std::endl;   
+            finish();
     }
 
     
@@ -181,11 +202,17 @@ class downloadCallback : public Callback {
     bool error = false;
 
     public:
-    downloadCallback(sockaddr_in &serverAddr, int sockfd, const std::string& filename) : Callback(0, 0), serverAddr(serverAddr), filename(filename), sockfd(sockfd) {
-
-        disable_timeout();
-
+    downloadCallback(sockaddr_in &serverAddr, int sockfd, const std::string& filename, long timeout) : Callback(sockfd, timeout), serverAddr(serverAddr), filename(filename), sockfd(sockfd) {
         this->fd = sockfd;
+
+        try{
+            // verifica se um arquivo com o mesmo nome ja existe
+            if(fileCheck(filename)){
+                // deleta o arquivo
+                deleteFile(filename);
+            } 
+        } catch(std::runtime_error e){
+        }
     }
     
     void handle(){ 
@@ -238,7 +265,16 @@ class downloadCallback : public Callback {
     }
 
     void handle_timeout(){
-            std::cout << "Timeout" << std::endl;
+            std::cout << "Timeout na sessão com o servidor: " << getIP(this->serverAddr) << std::endl;  
+
+            // deleta o arquivo em caso de timeout
+            try{
+                deleteFile(this->filename);
+            } catch(std::runtime_error e){
+                std::cout << e.what() << std::endl;
+            }
+
+            finish();
     }
 };
 
