@@ -6,7 +6,19 @@ set(CMAKE_CXX_STANDARD 14)
 # Define o diretório de saída para o binário
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/out)
 
-add_executable(tftpclient.out app/main.cpp app/main.h app/requisition.h app/requisition.cpp app/io.h app/io.cpp) 
+add_executable(tftpclient.out 
+               app/main.cpp 
+               app/main.h 
+               app/messaging.h 
+               app/messaging.cpp 
+               app/io.h 
+               app/io.cpp
+               app/inet.h
+               app/inet.cpp
+               libs/callback.cpp
+               libs/callback.h
+               libs/poller.cpp
+               libs/poller.h) 
 
 add_custom_target(run
     COMMAND tftpclient.out
