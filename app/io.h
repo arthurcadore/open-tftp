@@ -5,6 +5,8 @@
 #include <fstream>
 #include <string>  
 #include <cstddef> 
+#include <vector>
+#include <cstdint>
 
 /*
     Verifica se o arquivo existe, se é possivel abrir. 
@@ -28,7 +30,7 @@ int fileLenght(const std::string& nomeArquivo);
         - n: número do bloco a ser lido
         - blockSize: tamanho do bloco a ser lido
 */
-char* readBlock(const std::string& nomeArquivo, int n, int blockSize, int lenght);
+std::vector<uint8_t> readBlock(const std::string& nomeArquivo, int n, int blockSize, int lenght);
 
 /*
     Função para escrever blocos em um arquivo

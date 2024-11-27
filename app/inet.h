@@ -135,10 +135,10 @@ class uploadCallback : public Callback {
     }
     
     void handle(){ 
-        char buffer[516];
+        char * bufferRX = new char[516];
          
         socklen_t addrLen = sizeof(serverAddr);
-        ssize_t recvBytes = recvfrom(fd, buffer, sizeof(buffer), 0, (sockaddr*)&serverAddr, &addrLen);
+        ssize_t recvBytes = recvfrom(fd, bufferRX, sizeof(bufferRX), 0, (sockaddr*)&serverAddr, &addrLen);
     
         if (recvBytes < 0) {
             throw std::runtime_error("Erro ao receber a mensagem");
@@ -146,24 +146,26 @@ class uploadCallback : public Callback {
     
         try{
             // converte o buffer para um ackMessage
-            ackMessage msg = ackMessage::deserialize(buffer, recvBytes);
+            ackMessage msg = ackMessage::deserialize(bufferRX, recvBytes);
             // std::cout << "ACK Number: " << msg.printBN() << std::endl;
             blockNumber = msg.blockNumber + 1;
 
             if(blockNumber <= totalBlocks){
-            std::string block;
+
+            // cria um buffer para armazenar o bloco
+            std::vector<uint8_t> bufferTX(516);
 
             if (blockNumber == totalBlocks) {
                 lastblock = true;
-                 block = readBlock(this->filename, (blockNumber-1), blocksize, lastBlocksize);
+                 bufferTX = readBlock(this->filename, (blockNumber-1), blocksize, lastBlocksize);
                 //  std::cout << "Last Block: " << block << std::endl;
             } else {
-                 block = readBlock(this->filename, (blockNumber-1), blocksize, blocksize);
+                 bufferTX = readBlock(this->filename, (blockNumber-1), blocksize, blocksize);
                 //  std::cout << "Block: " << block << std::endl;
             }
 
             // cria um dataMessage
-            dataMessage data(OpcodeDM::DATA, blockNumber, block);
+            dataMessage data(OpcodeDM::DATA, blockNumber, bufferTX);
 
             // envia o bloco para o servidor
             sendto(fd, data.serialize().data(), data.serialize().size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
@@ -174,7 +176,7 @@ class uploadCallback : public Callback {
         } catch(std::runtime_error e){
             std::cout << e.what() << std::endl;
             // cria uma mensagem de erro
-            errorMessage msg = errorMessage::deserialize(buffer, recvBytes);
+            errorMessage msg = errorMessage::deserialize(bufferRX, recvBytes);
             std::cout << "Erro recebido do servidor: " << msg.printData() << std::endl;
             finish();
             error = true;

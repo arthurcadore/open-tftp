@@ -44,40 +44,38 @@ int fileLenght(const std::string& nomeArquivo){
     return tamanho;
 }
 
-
 /*
-    Função para ler blocos de um arquivo e retornar o conteúdo em um char*
+    Função para ler blocos de um arquivo e retornar o conteúdo em um vetor de 8 bits
     Parâmetros:
         - nomeArquivo: nome do arquivo a ser lido
         - n: número do bloco a ser lido
         - blockSize: tamanho do bloco (referencia)
         - lenght: quantidade de bytes a serem lidos
 */
-char* readBlock(const std::string& nomeArquivo, int n, int blockSize, int lenght){
-
-    if(lenght == 0){
-        // cria uma string vazia
-        char* bloco = new char[1];
-        bloco[0] = '\0';
-        return bloco;
-    }
-
-    // Abre o arquivo em modo binário
-    std::ifstream arquivo(nomeArquivo, std::ios::in | std::ios::binary);
-
-    // Move o ponteiro do arquivo para o bloco n
-    arquivo.seekg(n * blockSize);
-
-    // Aloca memória para o bloco
-    char* bloco = new char[lenght];
-
-    // Lê o bloco (tenta pegar blockSize bytes, caso não consiga, pega o que conseguir)
-    arquivo.read(bloco, lenght);
+std::vector<uint8_t> readBlock(const std::string& nomeArquivo, int n, int blockSize, int lenght){
     
-    // Fecha o arquivo
-    arquivo.close();
-
-    return bloco;
+        if(lenght == 0){
+            // cria uma string vazia
+            std::vector<uint8_t> bloco;
+            return bloco;
+        }
+    
+        // Abre o arquivo em modo binário
+        std::ifstream arquivo(nomeArquivo, std::ios::in | std::ios::binary);
+    
+        // Move o ponteiro do arquivo para o bloco n
+        arquivo.seekg(n * blockSize);
+    
+        // Aloca memória para o bloco
+        std::vector<uint8_t> bloco(lenght);
+    
+        // Lê o bloco (tenta pegar blockSize bytes, caso não consiga, pega o que conseguir)
+        arquivo.read(reinterpret_cast<char*>(bloco.data()), lenght);
+        
+        // Fecha o arquivo
+        arquivo.close();
+    
+        return bloco;
 }
 
 

@@ -58,10 +58,10 @@ struct requestMessage {
 struct dataMessage {
     OpcodeDM opcode;      // Opcode de 2 bytes
     uint16_t blockNumber; // Número do bloco
-    std::string data;    
+    std::vector<uint8_t> data;    
 
     // Construtor
-    dataMessage(OpcodeDM op, uint16_t block, const std::string& data): 
+    dataMessage(OpcodeDM op, uint16_t block, const std::vector<uint8_t>& data): 
         opcode(op), 
         blockNumber(block), 
         data(data) {}

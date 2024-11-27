@@ -73,12 +73,14 @@ dataMessage dataMessage::deserialize(char buffer[], int comprimento) {
         // Converte os dois bytes seguintes para um inteiro de 16 bits
         uint16_t blockNumber = (buffer[2] << 8) | buffer[3];
     
-        // Cria um vetor de char com os dados da mensagem
-        std::vector<char> data(buffer + 4, buffer + comprimento);
+        // Cria um vetor de 8 bits com os dados da mensagem
+        std::vector<uint8_t> data(buffer + 4, buffer + comprimento);
     
         // Retorna um objeto dataMessage com os dados deserializados
-        return dataMessage(OpcodeDM::DATA, blockNumber, std::string(data.begin(), data.end()));
+        return dataMessage(OpcodeDM::DATA, blockNumber, data);
 }
+
+
 
 // função para imprimir o conteúdo da mensagem
 std::string dataMessage::printData() {
