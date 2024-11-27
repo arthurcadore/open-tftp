@@ -135,7 +135,7 @@ class uploadCallback : public Callback {
     }
     
     void handle(){ 
-        char * bufferRX = new char[516];
+        char bufferRX[516];
          
         socklen_t addrLen = sizeof(serverAddr);
         ssize_t recvBytes = recvfrom(fd, bufferRX, sizeof(bufferRX), 0, (sockaddr*)&serverAddr, &addrLen);
@@ -176,6 +176,7 @@ class uploadCallback : public Callback {
         } catch(std::runtime_error e){
             std::cout << e.what() << std::endl;
             // cria uma mensagem de erro
+            std::cout << "comprimento: " << recvBytes << std::endl;
             errorMessage msg = errorMessage::deserialize(bufferRX, recvBytes);
             std::cout << "Erro recebido do servidor: " << msg.printData() << std::endl;
             finish();
