@@ -1,0 +1,12 @@
+version: '3'
+services:
+  tftpserver2:
+    image: alpine:3.21.0
+    container_name: tftpserver2
+    command: sh -c "/server/tftp_server /share 69"
+    volumes:
+      - ./share:/share/
+      - ./tftp_server:/server/tftp_server
+    ports:
+      - "3069:69/udp"
+    restart: always
