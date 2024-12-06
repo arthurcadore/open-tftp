@@ -22,8 +22,8 @@ add_executable(tftpclient.out
                libs/callback.h
                libs/poller.cpp
                libs/poller.h
-               proto/msg.protoBuffer.pb.cc
-               proto/msg.protoBuffer.pb.h) 
+               proto/msg.pb.cc
+               proto/msg.pb.h) 
 
 # Vincula a biblioteca do Protocol Buffers ao executável
 target_link_libraries(tftpclient.out ${Protobuf_LIBRARIES})
