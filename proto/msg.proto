@@ -1,5 +1,6 @@
 syntax = "proto2";
 
+// namespace tftp2;
 package tftp2;
 
 enum Mode {

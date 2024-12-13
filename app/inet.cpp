@@ -54,15 +54,25 @@ int stringToPort(const std::string &p)
 void tftpclient::upload()
 {
 
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
   std::cout << "Uploading file: " << this->filename << std::endl;
 
   // cria a mensagem de WRQ e envia para o servidor
-  requestMessage msg(OpcodeRM::WRITE, this->filename);
+  tftp2::Mensagem wrq;
+
+  wrq.mutable_wrq();
+  wrq.mutable_wrq()->set_fname(this->filename);
+  wrq.mutable_wrq()->set_mode(tftp2::Mode::octet);
 
   std::cout << "Sending WRQ" << std::endl;
 
+  // cria uma mensagem de WRQ
+  std::string wrqString; 
+  wrq.SerializeToString(&wrqString);
+
   // envia a mensagem para o servidor
-  sendto(this->sockfd, msg.serialize().data(), msg.serialize().size(), 0, (sockaddr *)&serverAddr, sizeof(serverAddr));
+  sendto(this->sockfd, wrqString.data(), wrqString.size(), 0, (sockaddr *)&serverAddr, sizeof(serverAddr));
 
   // cria um callback para o upload
   uploadCallback cb(this->serverAddr, this->sockfd, this->filename, this->timeout);
@@ -79,14 +89,26 @@ void tftpclient::upload()
 
 void tftpclient::download()
 {
+  
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   std::cout << "Downloading file: " << this->filename << std::endl;
 
   // cria a mensagem de WRQ e envia para o servidor
-  requestMessage msg(OpcodeRM::READ, this->filename);
+  tftp2::Mensagem rrq;
+
+  rrq.mutable_rrq(); 
+  rrq.mutable_rrq()->set_fname(this->filename);
+  rrq.mutable_rrq()->set_mode(tftp2::Mode::octet);
+
+  std::cout << "Sending RRQ" << std::endl;
+
+  // cria uma mensagem de RRQ
+  std::string rrqString;
+  rrq.SerializeToString(&rrqString);
 
   // envia a mensagem para o servidor
-  sendto(this->sockfd, msg.serialize().data(), msg.serialize().size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
+  sendto(this->sockfd, rrqString.data(), rrqString.size(), 0, (sockaddr *)&serverAddr, sizeof(serverAddr));
 
   // cria um callback para o download
   downloadCallback cb(this->serverAddr, this->sockfd, this->filename, this->timeout);

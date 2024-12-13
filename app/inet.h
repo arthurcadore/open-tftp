@@ -13,6 +13,7 @@
 #include "messaging.h"
 #include "io.h"
 #include "../libs/poller.h"
+#include "../proto/msg.pb.h"
 
 
 /*
@@ -133,55 +134,58 @@ class uploadCallback : public Callback {
             finish();
         }
     }
-    
-    void handle(){ 
-        char bufferRX[516];
-         
-        socklen_t addrLen = sizeof(serverAddr);
-        ssize_t recvBytes = recvfrom(fd, bufferRX, sizeof(bufferRX), 0, (sockaddr*)&serverAddr, &addrLen);
-    
-        if (recvBytes < 0) {
-            throw std::runtime_error("Erro ao receber a mensagem");
+
+    void handle() { 
+    char bufferRX[516];
+    socklen_t addrLen = sizeof(serverAddr);
+    ssize_t recvBytes = recvfrom(fd, bufferRX, sizeof(bufferRX), 0, (sockaddr*)&serverAddr, &addrLen);
+
+    if (recvBytes < 0) {
+        throw std::runtime_error("Erro ao receber a mensagem");
+    }
+
+    try {
+        // Desserializa a mensagem recebida
+        tftp2::Mensagem msg;
+        if (!msg.ParseFromArray(bufferRX, recvBytes)) {
+            throw std::runtime_error("Falha ao desserializar a mensagem");
         }
-    
-        try{
-            // converte o buffer para um ackMessage
-            ackMessage msg = ackMessage::deserialize(bufferRX, recvBytes);
-            // std::cout << "ACK Number: " << msg.printBN() << std::endl;
-            blockNumber = msg.blockNumber + 1;
 
-            if(blockNumber <= totalBlocks){
+        if (msg.has_ack()) {
+            auto ack = msg.ack();
+            blockNumber = ack.block_n() + 1;
 
-            // cria um buffer para armazenar o bloco
-            std::vector<uint8_t> bufferTX(516);
+            if (blockNumber <= totalBlocks) {
+                // Lê o bloco do arquivo
+                std::vector<uint8_t> bufferTX = readBlock(this->filename, blockNumber - 1, blocksize, lastblock ? lastBlocksize : blocksize);
 
-            if (blockNumber == totalBlocks) {
-                lastblock = true;
-                 bufferTX = readBlock(this->filename, (blockNumber-1), blocksize, lastBlocksize);
-                //  std::cout << "Last Block: " << block << std::endl;
+                // Cria a mensagem DATA
+                tftp2::Mensagem dataMsg;
+                auto* data = dataMsg.mutable_data();
+                data->set_message(bufferTX.data(), bufferTX.size());
+                data->set_block_n(blockNumber);
+
+                std::cout << "Enviando bloco " << blockNumber << " de " << totalBlocks << std::endl;
+
+                std::cout << "Tamanho do bloco: " << bufferTX.size() << std::endl;  
+
+                // Serializa e envia a mensagem
+                std::string serializedData;
+                dataMsg.SerializeToString(&serializedData);
+                sendto(fd, serializedData.data(), serializedData.size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
             } else {
-                 bufferTX = readBlock(this->filename, (blockNumber-1), blocksize, blocksize);
-                //  std::cout << "Block: " << block << std::endl;
-            }
-
-            // cria um dataMessage
-            dataMessage data(OpcodeDM::DATA, blockNumber, bufferTX);
-
-            // envia o bloco para o servidor
-            sendto(fd, data.serialize().data(), data.serialize().size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
-            }else{
                 std::cout << "Upload concluído" << std::endl;
                 finish();
             }
-        } catch(std::runtime_error e){
-            std::cout << e.what() << std::endl;
-            // cria uma mensagem de erro
-            std::cout << "comprimento: " << recvBytes << std::endl;
-            errorMessage msg = errorMessage::deserialize(bufferRX, recvBytes);
-            std::cout << "Erro recebido do servidor: " << msg.printData() << std::endl;
+        } else if (msg.has_error()) {
+            auto error = msg.error();
+            std::cout << "Erro recebido do servidor: " << error.errorcode() << std::endl;
             finish();
-            error = true;
         }
+    } catch (std::exception& e) {
+        std::cerr << "Erro: " << e.what() << std::endl;
+        finish();
+    }
     }
 
     void handle_timeout(){
@@ -218,10 +222,8 @@ class downloadCallback : public Callback {
         }
     }
     
-    void handle(){ 
-
+    void handle() {
     char buffer[516];
-     
     socklen_t addrLen = sizeof(serverAddr);
     ssize_t recvBytes = recvfrom(fd, buffer, sizeof(buffer), 0, (sockaddr*)&serverAddr, &addrLen);
 
@@ -229,43 +231,47 @@ class downloadCallback : public Callback {
         throw std::runtime_error("Erro ao receber a mensagem");
     }
 
-    if (recvBytes < blocksize) {
-        lastblock = true;
-    }
+    try {
 
-    try{
-        // converte o buffer para um dataMessage   
-        dataMessage msg = dataMessage::deserialize(buffer, recvBytes);
+        //imprime o tamanho da mensagem recebida
+        std::cout << "Tamanho da mensagem recebida: " << recvBytes << std::endl;
 
-        blockNumber = msg.printBN();
+        // Desserializa a mensagem recebida
+        tftp2::Mensagem msg;
+        if (!msg.ParseFromArray(buffer, recvBytes)) {
+            throw std::runtime_error("Falha ao desserializar a mensagem");
+        }
 
-        // escreve o bloco no arquivo
-        writeBlock(this->filename, msg.printData());
+        if (msg.has_data()) {
+            auto data = msg.data();
+            blockNumber = data.block_n();
 
-    } catch (std::runtime_error e) {
-        std::cout << e.what() << std::endl;
-        // cria uma mensagem de erro
-        errorMessage msg = errorMessage::deserialize(buffer, recvBytes);
-        std::cout << "Erro recebido do servidor: " << msg.printData() << std::endl;
+            // Escreve os dados no arquivo
+            writeBlock(this->filename, data.message());
+
+            // Envia ACK
+            tftp2::Mensagem ackMsg;
+            auto* ack = ackMsg.mutable_ack();
+            ack->set_block_n(blockNumber);
+
+            std::string serializedAck;
+            ackMsg.SerializeToString(&serializedAck);
+            sendto(fd, serializedAck.data(), serializedAck.size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
+
+            if (data.message().size() < blocksize) {
+                std::cout << "Download concluído" << std::endl;
+                finish();
+            }
+        } else if (msg.has_error()) {
+            auto error = msg.error();
+            std::cout << "Erro recebido do servidor: " << error.errorcode() << std::endl;
+            finish();
+        }
+    } catch (std::exception& e) {
+        std::cerr << "Erro: " << e.what() << std::endl;
         finish();
-        error = true;
     }
-
-    // cria um ackMessage
-    ackMessage ack(OpcodeAM::ACK, blockNumber);
-
-    // envia o ack para o servidor
-    sendto(fd, ack.serialize().data(), ack.serialize().size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
-
-    // incrementa o número do bloco
-    blockNumber++;
-
-    if(lastblock && !error){
-        std::cout << "Download concluído" << std::endl;
-        finish();
-    };
-
-    }
+}
 
     void handle_timeout(){
             std::cout << "Timeout na sessão com o servidor: " << getIP(this->serverAddr) << std::endl;  
