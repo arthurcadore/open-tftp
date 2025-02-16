@@ -136,7 +136,7 @@ class uploadCallback : public Callback {
     }
 
     void handle() { 
-    char bufferRX[516];
+    char bufferRX[1024];
     socklen_t addrLen = sizeof(serverAddr);
     ssize_t recvBytes = recvfrom(fd, bufferRX, sizeof(bufferRX), 0, (sockaddr*)&serverAddr, &addrLen);
 
@@ -223,13 +223,16 @@ class downloadCallback : public Callback {
     }
     
     void handle() {
-    char buffer[516];
+    char buffer[1024];
     socklen_t addrLen = sizeof(serverAddr);
     ssize_t recvBytes = recvfrom(fd, buffer, sizeof(buffer), 0, (sockaddr*)&serverAddr, &addrLen);
 
     if (recvBytes < 0) {
         throw std::runtime_error("Erro ao receber a mensagem");
     }
+
+    // converte o buffer para uma string para facilitar a manipulação
+    std::string bufferStr(buffer, recvBytes);
 
     try {
 
@@ -238,7 +241,7 @@ class downloadCallback : public Callback {
 
         // Desserializa a mensagem recebida
         tftp2::Mensagem msg;
-        if (!msg.ParseFromArray(buffer, recvBytes)) {
+        if (!msg.ParseFromString(bufferStr)) {
             throw std::runtime_error("Falha ao desserializar a mensagem");
         }
 
