@@ -1,4 +1,5 @@
 #include "main.h"
+#include <sstream>
 
 enum Comando {
     CMD_EXIT,
@@ -17,7 +18,7 @@ Comando converterComando(const std::string& comando) {
     if (comando == "get") return CMD_GET;
     if (comando == "put") return CMD_PUT;
     if (comando == "list") return CMD_LIST;
-    if (comando == "rename") return CMD_MOVE;
+    if (comando == "move") return CMD_MOVE;
     if (comando == "mdkir") return CMD_MKDIR;
     if (comando == "remove") return CMD_REMOVE;
     return CMD_INVALIDO;
@@ -27,134 +28,70 @@ Comando converterComando(const std::string& comando) {
 */
 void cli(const std::string& ip, const std::string& port) {
     while (true) {
-        // Exibe o prompt de comando
         std::cout << "tftp > ";
-        std::string comando;
+        std::string linha;
+        std::getline(std::cin, linha);
 
-        // Lê a linha de comando
-        std::getline(std::cin, comando);
-
-        // Separa a string comando em duas partes: comando e argumento
-        std::string argumento;
-        std::size_t pos = comando.find(" ");
-        if (pos != std::string::npos) {
-            argumento = comando.substr(pos + 1);
-            comando = comando.substr(0, pos);
+        std::istringstream iss(linha);
+        std::vector<std::string> partes;
+        std::string palavra;
+        while (iss >> palavra) {
+            partes.push_back(palavra);
         }
 
-        // Ignora comandos vazios
-        if (comando.empty()) {
+        if (partes.empty()) {
             continue;
         }
 
-        // Converte o comando para o enum correspondente
+        std::string comando = partes[0];
         Comando cmd = converterComando(comando);
 
-        // Switch-case para tratar os comandos
-        switch (cmd) {
-            case CMD_EXIT:
-                // Sai do laço
-                return;
+        try {
+            switch (cmd) {
+                case CMD_EXIT:
+                    return;
 
-            case CMD_GET:
-                // Ignora argumentos vazios
-                if (argumento.empty()) {
-                    std::cout << "Argumento inválido" << std::endl;
-                    continue;
-                }
+                case CMD_GET:
+                case CMD_PUT:
+                case CMD_LIST:
+                case CMD_MKDIR:
+                case CMD_REMOVE:
+                    if (partes.size() < 2) {
+                        std::cout << "Uso: " << comando << " <arquivo/diretório>" << std::endl;
+                        continue;
+                    }
+                    {
+                        tftpclient client(ip, port, partes[1], 1000);
+                        if (cmd == CMD_GET) client.download();
+                        if (cmd == CMD_PUT) client.upload();
+                        if (cmd == CMD_LIST) client.list();
+                        if (cmd == CMD_MKDIR) client.mkdir();
+                        if (cmd == CMD_REMOVE) client.remove();
+                    }
+                    break;
 
-                try {
-                    // Faz o download do arquivo
-                    tftpclient client(ip, port, argumento, 100);
-                    client.download();
-                } catch (std::runtime_error& e) {
-                    std::cout << e.what() << std::endl;
-                }
-                break;
+                case CMD_MOVE:
+                    if (partes.size() < 3) {
+                        std::cout << "Uso: move <origem> <destino>" << std::endl;
+                        continue;
+                    }
+                    {
+                        tftpclient client(ip, port, partes[1], 1000);
+                        client.move(partes[2]);
+                    }
+                    break;
 
-            case CMD_PUT:
-                // Ignora argumentos vazios
-                if (argumento.empty()) {
-                    std::cout << "Argumento inválido" << std::endl;
-                    continue;
-                }
-
-                try {
-                    // Instancia um cliente TFTP
-                    tftpclient client(ip, port, argumento, 1000);
-                    client.upload();
-                } catch (std::runtime_error& e) {
-                    std::cout << e.what() << std::endl;
-                }
-                break;
-
-            case CMD_LIST:
-
-                if (argumento.empty()) {
-                    std::cout << "Argumento inválido" << std::endl;
-                    continue;
-                }
-              
-                try {
-                    // Instancia um cliente TFTP
-                    tftpclient client(ip, port, argumento, 1000);
-                    client.list();
-                } catch (std::runtime_error& e) {
-                    std::cout << e.what() << std::endl;
-                }
-              
-              case CMD_MOVE:
-                if (argumento.empty()) {
-                    std::cout << "Argumento inválido" << std::endl;
-                    continue;
-                }
-              
-                try {
-                    // Instancia um cliente TFTP
-                    tftpclient client(ip, port, argumento, 1000);
-                    client.move();
-                } catch (std::runtime_error& e) {
-                    std::cout << e.what() << std::endl;
-                }
-
-              case CMD_MKDIR:
-                if (argumento.empty()) {
-                    std::cout << "Argumento inválido" << std::endl;
-                    continue;
-                }
-              
-                try {
-                    // Instancia um cliente TFTP
-                    tftpclient client(ip, port, argumento, 1000);
-                    client.mkdir();
-                } catch (std::runtime_error& e) {
-                    std::cout << e.what() << std::endl;
-                }
-                break;
-
-              case CMD_REMOVE:
-                if (argumento.empty()) {
-                    std::cout << "Argumento inválido" << std::endl;
-                    continue;
-                }
-              
-                try {
-                    // Instancia um cliente TFTP
-                    tftpclient client(ip, port, argumento, 1000);
-                    client.remove();
-                } catch (std::runtime_error& e) {
-                    std::cout << e.what() << std::endl;
-                }
-                break;
-
-
-            case CMD_INVALIDO:
-            default:
-                std::cout << "Comando inválido" << std::endl;
-                break;
+                case CMD_INVALIDO:
+                default:
+                    std::cout << "Comando inválido" << std::endl;
+                    break;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Erro: " << e.what() << std::endl;
         }
     }
 }
+
 
 /*
   Função principal

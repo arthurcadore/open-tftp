@@ -123,6 +123,41 @@ void tftpclient::download()
   poller.despache();
 };
 
+void tftpclient::move(const std::string& newname) {
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+    std::cout << "Renomeando arquivo: " << this->filename << " -> " << newname << std::endl;
+
+    // Cria a mensagem de MOVE e envia para o servidor
+    tftp2::Mensagem moveMsg;
+
+    // Configura a mensagem MOVE
+    auto* move = moveMsg.mutable_move();
+    move->set_nome_orig(filename);
+    move->set_nome_novo(newname);
+
+    std::cout << "Enviando comando MOVE" << std::endl;
+
+    // Serializa a mensagem MOVE
+    std::string moveString;
+    moveMsg.SerializeToString(&moveString);
+
+    // Envia a mensagem para o servidor
+    sendto(this->sockfd, moveString.data(), moveString.size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
+
+    // Cria um callback para o comando MOVE
+    moveCallback cb(this->serverAddr, this->sockfd, filename, newname, this->timeout);
+
+    // Cria um poller
+    Poller poller;
+
+    // Adiciona o callback ao poller
+    poller.adiciona(&cb);
+
+    // Despacha o poller
+    poller.despache();
+}
+
 /*
   Função para receber um socket e retornar uma string com o endereço IP de origem
 
@@ -136,9 +171,7 @@ std::string getIP(sockaddr_in socket) {
   return std::string(ip);
 }
 
-void tftpclient::move(){
 
-}
 void tftpclient::list(){
 
 }
