@@ -96,104 +96,123 @@ struct tftpclient {
 class uploadCallback : public Callback {
     sockaddr_in serverAddr;
     std::string filename;
-    int blockNumber = 1;
-    int totalBlocks;    
-    int blocksize = 512;
+    int blockNumber = 1; // Bloco atual começa em 1
+    int totalBlocks;     // Número total de blocos
+    int blocksize = 512; // Tamanho do bloco de dados
     int fileSize;
     bool lastblock = false;
     int sockfd;
     bool error = false;
     int lastBlocksize;
+    enum State { SENDING_DATA, WAITING_FOR_ACK, COMPLETED, ERROR };
+    State currentState;
 
-    public:
-    uploadCallback(sockaddr_in &serverAddr, int sockfd, const std::string& filename, long timeout) : Callback(sockfd, timeout), serverAddr(serverAddr), filename(filename), sockfd(sockfd) {
-
+public:
+    uploadCallback(sockaddr_in &serverAddr, int sockfd, const std::string& filename, long timeout) 
+        : Callback(sockfd, timeout), serverAddr(serverAddr), filename(filename), sockfd(sockfd), currentState(SENDING_DATA) {
         this->fd = sockfd;
 
-        try{
-            // verifica se o arquivo existe e se é possível abri-lo
+        try {
             if(fileCheck(filename)){
-
-                // obtém o tamanho do arquivo
-                int fileSize = fileLenght(filename);
-
-                // calcula o número total de blocos e arredonda para cima
+                fileSize = fileLenght(filename);
                 totalBlocks = ceil(fileSize / blocksize) + 1;
-                // std::cout << "File size: " << totalBlocks << " Blocks" << std::endl;
-
-                // calcula o tamanho do último segmento em bytes
                 lastBlocksize = fileSize % blocksize;
-                // std::cout << "Last segment length: " << lastBlocksize << " Bytes" << std::endl;
+
+                std::cout << "Tamanho do arquivo: " << fileSize << std::endl;
+                std::cout << "Número de blocos: " << totalBlocks << std::endl;
+                std::cout << "Tamanho do último bloco: " << lastBlocksize << std::endl;
+                std::cout << "block number: " << blockNumber << std::endl;
             } 
-        } catch(std::runtime_error e){
-
-            // cria uma mensagem de erro
+        } catch(std::runtime_error e) {
             std::cout << e.what() << std::endl;
-
-            // finaliza a transferência
             finish();
         }
     }
 
-    void handle() { 
-    char bufferRX[1024];
-    socklen_t addrLen = sizeof(serverAddr);
-    ssize_t recvBytes = recvfrom(fd, bufferRX, sizeof(bufferRX), 0, (sockaddr*)&serverAddr, &addrLen);
+    void handle() {
+        char bufferRX[1024];
+        socklen_t addrLen = sizeof(serverAddr);
+        ssize_t recvBytes = recvfrom(fd, bufferRX, sizeof(bufferRX), 0, (sockaddr*)&serverAddr, &addrLen);
 
-    if (recvBytes < 0) {
-        throw std::runtime_error("Erro ao receber a mensagem");
-    }
-
-    try {
-        // Desserializa a mensagem recebida
-        tftp2::Mensagem msg;
-        if (!msg.ParseFromArray(bufferRX, recvBytes)) {
-            throw std::runtime_error("Falha ao desserializar a mensagem");
+        if (recvBytes < 0) {
+            throw std::runtime_error("Erro ao receber a mensagem");
         }
 
-        if (msg.has_ack()) {
-            auto ack = msg.ack();
-            blockNumber = ack.block_n() + 1;
-
-            if (blockNumber <= totalBlocks) {
-                // Lê o bloco do arquivo
-                std::vector<uint8_t> bufferTX = readBlock(this->filename, blockNumber - 1, blocksize, lastblock ? lastBlocksize : blocksize);
-
-                // Cria a mensagem DATA
-                tftp2::Mensagem dataMsg;
-                auto* data = dataMsg.mutable_data();
-                data->set_message(bufferTX.data(), bufferTX.size());
-                data->set_block_n(blockNumber);
-
-                std::cout << "Enviando bloco " << blockNumber << " de " << totalBlocks << std::endl;
-
-                std::cout << "Tamanho do bloco: " << bufferTX.size() << std::endl;  
-
-                // Serializa e envia a mensagem
-                std::string serializedData;
-                dataMsg.SerializeToString(&serializedData);
-                sendto(fd, serializedData.data(), serializedData.size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
-            } else {
-                std::cout << "Upload concluído" << std::endl;
-                finish();
+        try {
+            tftp2::Mensagem msg;
+            if (!msg.ParseFromArray(bufferRX, recvBytes)) {
+                throw std::runtime_error("Falha ao desserializar a mensagem");
             }
-        } else if (msg.has_error()) {
-            auto error = msg.error();
-            std::cout << "Erro recebido do servidor: " << error.errorcode() << std::endl;
+
+            switch (currentState) {
+                case SENDING_DATA:
+                    // Envia o próximo bloco de dados
+                    sendData();
+                    currentState = WAITING_FOR_ACK;
+                    break;
+
+                case WAITING_FOR_ACK:
+                    if (msg.has_ack()) {
+                        auto ack = msg.ack();
+                        if (ack.block_n() == blockNumber) {
+                            blockNumber++;
+                            if (blockNumber <= totalBlocks) {
+                                currentState = SENDING_DATA;
+                            } else {
+                                currentState = COMPLETED;
+                                std::cout << "Upload concluído" << std::endl;
+                                finish();
+                            }
+                        }
+                    } else if (msg.has_error()) {
+                        currentState = ERROR;
+                        processError(msg);
+                    }
+                    break;
+
+                case COMPLETED:
+                case ERROR:
+                    // Nada a fazer, a transferência já foi concluída ou terminou com erro
+                    break;
+            }
+        } catch (std::exception& e) {
+            std::cerr << "Erro: " << e.what() << std::endl;
+            currentState = ERROR;
             finish();
         }
-    } catch (std::exception& e) {
-        std::cerr << "Erro: " << e.what() << std::endl;
+    }
+
+    void sendData() {
+
+        if (blockNumber == totalBlocks) {
+            lastblock = true;
+        }
+
+        std::vector<uint8_t> bufferTX = readBlock(this->filename, blockNumber - 1, blocksize, lastblock ? lastBlocksize : blocksize);
+
+        tftp2::Mensagem dataMsg;
+        auto* data = dataMsg.mutable_data();
+        data->set_message(bufferTX.data(), bufferTX.size());
+        data->set_block_n(blockNumber);
+
+        std::string serializedData;
+        dataMsg.SerializeToString(&serializedData);
+        sendto(fd, serializedData.data(), serializedData.size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
+
+        std::cout << "Enviando bloco " << blockNumber << " de " << totalBlocks << std::endl;
+    }
+
+    void processError(const tftp2::Mensagem& msg) {
+        auto error = msg.error();
+        std::cout << "Erro recebido do servidor: " << error.errorcode() << std::endl;
         finish();
     }
-    }
 
-    void handle_timeout(){
-            std::cout << "Timeout na sessão com o servidor: " << getIP(this->serverAddr) << std::endl;   
-            finish();
+    void handle_timeout() {
+        std::cout << "Timeout na sessão com o servidor: " << getIP(this->serverAddr) << std::endl;   
+        currentState = ERROR;
+        finish();
     }
-
-    
 };
 
 class downloadCallback : public Callback {

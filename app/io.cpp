@@ -41,6 +41,8 @@ int fileLenght(const std::string& nomeArquivo){
     // Fecha o arquivo
     arquivo.close();
 
+    std::cout << "Tamanho do arquivo: " << tamanho << std::endl;
+
     return tamanho;
 }
 
@@ -74,6 +76,9 @@ std::vector<uint8_t> readBlock(const std::string& nomeArquivo, int n, int blockS
         
         // Fecha o arquivo
         arquivo.close();
+
+        std::cout << "Tamanho a ser lido: " << lenght << " bytes" << std::endl;
+        std::cout << "Bloco lido: " << bloco.size() << " bytes" << std::endl;
     
         return bloco;
 }
