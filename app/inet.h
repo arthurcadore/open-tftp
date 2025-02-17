@@ -360,71 +360,53 @@ class moveCallback : public Callback {
 
 public:
     moveCallback(sockaddr_in &serverAddr, int sockfd, const std::string& oldName, const std::string& newName, long timeout) 
-        : Callback(sockfd, timeout), serverAddr(serverAddr), oldName(oldName), newName(newName), sockfd(sockfd), currentState(SENDING_MOVE) {
+        : Callback(sockfd, timeout), serverAddr(serverAddr), oldName(oldName), newName(newName), sockfd(sockfd), currentState(WAITING_FOR_ACK) {
         this->fd = sockfd;
+        std::cout << "moveCallback: " << oldName << " -> " << newName << std::endl;
     }
 
-    void handle() {
-        char bufferRX[1024];
-        socklen_t addrLen = sizeof(serverAddr);
-        ssize_t recvBytes = recvfrom(fd, bufferRX, sizeof(bufferRX), 0, (sockaddr*)&serverAddr, &addrLen);
+void handle() {
+    char bufferRX[1024];
+    socklen_t addrLen = sizeof(serverAddr);
+    ssize_t recvBytes = recvfrom(fd, bufferRX, sizeof(bufferRX), 0, (sockaddr*)&serverAddr, &addrLen);
 
-        if (recvBytes < 0) {
-            throw std::runtime_error("Erro ao receber a mensagem");
+    if (recvBytes < 0) {
+        throw std::runtime_error("Erro ao receber a mensagem");
+    }
+
+    try {
+        tftp2::Mensagem msg;
+        if (!msg.ParseFromArray(bufferRX, recvBytes)) {
+            throw std::runtime_error("Falha ao desserializar a mensagem");
         }
 
-        try {
-            tftp2::Mensagem msg;
-            if (!msg.ParseFromArray(bufferRX, recvBytes)) {
-                throw std::runtime_error("Falha ao desserializar a mensagem");
-            }
+        switch (currentState) {
 
-            switch (currentState) {
-                case SENDING_MOVE:
-                    std::cout << "Enviando comando MOVE" << std::endl;
-                    sendMove();
-                    currentState = WAITING_FOR_ACK;
-                    break;
-
-                case WAITING_FOR_ACK:
-                    std::cout << "Esperando ACK" << std::endl;
-                    if (msg.has_ack()) {
-                        auto ack = msg.ack();
-                        if (ack.block_n() == 1) { // Espera-se um ACK com block_n = 1
-                            std::cout << "ACK recebido. Renomeação concluída." << std::endl;
-                            currentState = COMPLETED;
-                            finish();
-                        }
-                    } else if (msg.has_error()) {
-                        currentState = ERROR;
-                        processError(msg);
+            case WAITING_FOR_ACK:
+                std::cout << "Esperando ACK" << std::endl;
+                if (msg.has_ack()) {
+                    auto ack = msg.ack();
+                    if (ack.block_n() == 0) {
+                        std::cout << "ACK recebido. Renomeação concluída." << std::endl;
+                        currentState = COMPLETED;
+                        finish();
                     }
-                    break;
+                } else if (msg.has_error()) {
+                    currentState = ERROR;
+                    processError(msg);
+                }
+                break;
 
-                case COMPLETED:
-                case ERROR:
-                    // Nada a fazer, a operação já foi concluída ou terminou com erro
-                    break;
-            }
-        } catch (std::exception& e) {
-            std::cerr << "Erro: " << e.what() << std::endl;
-            currentState = ERROR;
-            finish();
+            case COMPLETED:
+            case ERROR:
+                break;
         }
+    } catch (std::exception& e) {
+        std::cerr << "Erro: " << e.what() << std::endl;
+        currentState = ERROR;
+        finish();
     }
-
-    void sendMove() {
-        tftp2::Mensagem moveMsg;
-        auto* move = moveMsg.mutable_move();
-        move->set_nome_orig(oldName);
-        move->set_nome_novo(newName);
-
-        std::string serializedMove;
-        moveMsg.SerializeToString(&serializedMove);
-        sendto(fd, serializedMove.data(), serializedMove.size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
-
-        std::cout << "Comando MOVE enviado: " << oldName << " -> " << newName << std::endl;
-    }
+}
 
     void processError(const tftp2::Mensagem& msg) {
         auto error = msg.error();

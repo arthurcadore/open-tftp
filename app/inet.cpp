@@ -136,8 +136,6 @@ void tftpclient::move(const std::string& newname) {
     move->set_nome_orig(filename);
     move->set_nome_novo(newname);
 
-    std::cout << "Enviando comando MOVE" << std::endl;
-
     // Serializa a mensagem MOVE
     std::string moveString;
     moveMsg.SerializeToString(&moveString);
