@@ -58,7 +58,7 @@ void cli(const std::string& ip, const std::string& port) {
         } 
         try{
           // instancia um cliente TFTP
-          tftpclient client(ip, port, argumento, 100);
+          tftpclient client(ip, port, argumento, 1000);
           client.upload();
         } 
         catch (std::runtime_error e) {

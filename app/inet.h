@@ -134,6 +134,9 @@ public:
         socklen_t addrLen = sizeof(serverAddr);
         ssize_t recvBytes = recvfrom(fd, bufferRX, sizeof(bufferRX), 0, (sockaddr*)&serverAddr, &addrLen);
 
+
+        std::cout << "bloco recebido: " << recvBytes << std::endl;
+
         if (recvBytes < 0) {
             throw std::runtime_error("Erro ao receber a mensagem");
         }
@@ -146,18 +149,24 @@ public:
 
             switch (currentState) {
                 case SENDING_DATA:
+                    std::cout << "Enviando DATA" << std::endl;
+
                     // Envia o próximo bloco de dados
                     sendData();
                     currentState = WAITING_FOR_ACK;
                     break;
 
                 case WAITING_FOR_ACK:
+                    std::cout << "Esperando ACK" << std::endl;
                     if (msg.has_ack()) {
                         auto ack = msg.ack();
                         if (ack.block_n() == blockNumber) {
+                            std::cout << "ACK number: " << blockNumber << " confirmado" << std::endl;
                             blockNumber++;
+
                             if (blockNumber <= totalBlocks) {
-                                currentState = SENDING_DATA;
+                                sendData();
+                                break;
                             } else {
                                 currentState = COMPLETED;
                                 std::cout << "Upload concluído" << std::endl;
@@ -167,8 +176,8 @@ public:
                     } else if (msg.has_error()) {
                         currentState = ERROR;
                         processError(msg);
+                        break;
                     }
-                    break;
 
                 case COMPLETED:
                 case ERROR:
