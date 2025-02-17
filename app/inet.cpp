@@ -156,6 +156,73 @@ void tftpclient::move(const std::string& newname) {
     poller.despache();
 }
 
+void tftpclient::mkdir(){
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+    std::cout << "Criando diretório: " << this->filename << std::endl;
+
+    // Cria a mensagem de MKDIR e envia para o servidor
+    tftp2::Mensagem mkdirMsg;
+
+    // Configura a mensagem MKDIR
+    auto* mkdir = mkdirMsg.mutable_mkdir();
+    mkdir->set_path(filename);
+
+    // Serializa a mensagem MKDIR
+    std::string mkdirString;
+    mkdirMsg.SerializeToString(&mkdirString);
+
+    // Envia a mensagem para o servidor
+    sendto(this->sockfd, mkdirString.data(), mkdirString.size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
+
+    // Cria um callback para o comando MKDIR
+    mkdirCallback cb(this->serverAddr, this->sockfd, filename, this->timeout);
+
+    // Cria um poller
+    Poller poller;
+
+    // Adiciona o callback ao poller
+    poller.adiciona(&cb);
+
+    // Despacha o poller
+    poller.despache();
+}
+
+
+
+
+// void tftpclient::remove(){
+//     GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+//     std::cout << "Removendo arquivo: " << this->filename << std::endl;
+
+//     // Cria a mensagem de REMOVE e envia para o servidor
+//     tftp2::Mensagem removeMsg;
+
+//     // Configura a mensagem REMOVE
+//     auto* remove = removeMsg.mutable
+//     remove->set_nome(filename);
+
+//     // Serializa a mensagem REMOVE
+//     std::string removeString;
+//     removeMsg.SerializeToString(&removeString);
+
+//     // Envia a mensagem para o servidor
+//     sendto(this->sockfd, removeString.data(), removeString.size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
+
+//     // Cria um callback para o comando REMOVE
+//     removeCallback cb(this->serverAddr, this->sockfd, filename, this->timeout);
+
+//     // Cria um poller
+//     Poller poller;
+
+//     // Adiciona o callback ao poller
+//     poller.adiciona(&cb);
+
+//     // Despacha o poller
+//     poller.despache();
+// }
+
 /*
   Função para receber um socket e retornar uma string com o endereço IP de origem
 
@@ -173,9 +240,7 @@ std::string getIP(sockaddr_in socket) {
 void tftpclient::list(){
 
 }
-void tftpclient::mkdir(){
 
-}
 void tftpclient::remove(){
   
 }
