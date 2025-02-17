@@ -135,3 +135,16 @@ std::string getIP(sockaddr_in socket) {
   inet_ntop(AF_INET, &(socket.sin_addr), ip, INET_ADDRSTRLEN);
   return std::string(ip);
 }
+
+void tftpclient::move(){
+
+}
+void tftpclient::list(){
+
+}
+void tftpclient::mkdir(){
+
+}
+void tftpclient::remove(){
+  
+}

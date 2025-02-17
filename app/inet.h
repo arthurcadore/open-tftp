@@ -91,6 +91,14 @@ struct tftpclient {
     void upload();
 
     void download();
+
+    void move();
+
+    void list();
+
+    void mkdir();
+
+    void remove();
 };
 
 class uploadCallback : public Callback {
