@@ -196,97 +196,120 @@ class uploadCallback : public Callback {
     
 };
 
-
 class downloadCallback : public Callback {
     sockaddr_in serverAddr;
     std::string filename;
-    int blockNumber = 1;
-    int totalBlocks;    
-    int blocksize = 516;
-    int fileSize;
-    bool lastblock = false;
+    int blockNumber = 0;
+    int blocksize = 512;
     int sockfd;
     bool error = false;
+    enum State { WAITING_FOR_DATA, RECEIVING_DATA, COMPLETED, ERROR };
+    State currentState;
 
-    public:
-    downloadCallback(sockaddr_in &serverAddr, int sockfd, const std::string& filename, long timeout) : Callback(sockfd, timeout), serverAddr(serverAddr), filename(filename), sockfd(sockfd) {
+public:
+    downloadCallback(sockaddr_in &serverAddr, int sockfd, const std::string& filename, long timeout) 
+        : Callback(sockfd, timeout), serverAddr(serverAddr), filename(filename), sockfd(sockfd), currentState(WAITING_FOR_DATA) {
         this->fd = sockfd;
 
-        try{
-            // verifica se um arquivo com o mesmo nome ja existe
+        try {
             if(fileCheck(filename)){
-                // deleta o arquivo
                 deleteFile(filename);
             } 
-        } catch(std::runtime_error e){
+        } catch(std::runtime_error e) {
+            // Tratar exceção, se necessário
         }
     }
     
     void handle() {
-    char buffer[1024];
-    socklen_t addrLen = sizeof(serverAddr);
-    ssize_t recvBytes = recvfrom(fd, buffer, sizeof(buffer), 0, (sockaddr*)&serverAddr, &addrLen);
+        char buffer[1024];
+        socklen_t addrLen = sizeof(serverAddr);
+        ssize_t recvBytes = recvfrom(fd, buffer, sizeof(buffer), 0, (sockaddr*)&serverAddr, &addrLen);
 
-    if (recvBytes < 0) {
-        throw std::runtime_error("Erro ao receber a mensagem");
-    }
+        std::cout << "bloco comprimento: " << recvBytes << std::endl;
 
-    // converte o buffer para uma string para facilitar a manipulação
-    std::string bufferStr(buffer, recvBytes);
-
-    try {
-
-        //imprime o tamanho da mensagem recebida
-        std::cout << "Tamanho da mensagem recebida: " << recvBytes << std::endl;
-
-        // Desserializa a mensagem recebida
-        tftp2::Mensagem msg;
-        if (!msg.ParseFromString(bufferStr)) {
-            throw std::runtime_error("Falha ao desserializar a mensagem");
+        if (recvBytes < 0) {
+            throw std::runtime_error("Erro ao receber a mensagem");
         }
 
-        if (msg.has_data()) {
-            auto data = msg.data();
-            blockNumber = data.block_n();
+        std::string bufferStr(buffer, recvBytes);
 
-            // Escreve os dados no arquivo
-            writeBlock(this->filename, data.message());
-
-            // Envia ACK
-            tftp2::Mensagem ackMsg;
-            auto* ack = ackMsg.mutable_ack();
-            ack->set_block_n(blockNumber);
-
-            std::string serializedAck;
-            ackMsg.SerializeToString(&serializedAck);
-            sendto(fd, serializedAck.data(), serializedAck.size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
-
-            if (data.message().size() < blocksize) {
-                std::cout << "Download concluído" << std::endl;
-                finish();
+        try {
+            tftp2::Mensagem msg;
+            if (!msg.ParseFromString(bufferStr)) {
+                throw std::runtime_error("Falha ao desserializar a mensagem");
             }
-        } else if (msg.has_error()) {
-            auto error = msg.error();
-            std::cout << "Erro recebido do servidor: " << error.errorcode() << std::endl;
+
+            switch (currentState) {
+                case WAITING_FOR_DATA:
+                    if (msg.has_data()) {
+                        currentState = RECEIVING_DATA;
+                        processData(msg);
+                    } else if (msg.has_error()) {
+                        currentState = ERROR;
+                        processError(msg);
+                    }
+                    break;
+
+                case RECEIVING_DATA:
+                    if (msg.has_data()) {
+                        processData(msg);
+                        if (msg.data().message().size() < blocksize) {
+                            currentState = COMPLETED;
+                            std::cout << "Download concluído" << std::endl;
+                            finish();
+                        }
+                    } else if (msg.has_error()) {
+                        currentState = ERROR;
+                        processError(msg);
+                    }
+                    break;
+
+                case COMPLETED:
+                case ERROR:
+                    // Nada a fazer, a transferência já foi concluída ou terminou com erro
+                    break;
+            }
+        } catch (std::exception& e) {
+            std::cerr << "Erro: " << e.what() << std::endl;
+            currentState = ERROR;
             finish();
         }
-    } catch (std::exception& e) {
-        std::cerr << "Erro: " << e.what() << std::endl;
+    }
+
+    void processData(const tftp2::Mensagem& msg) {
+
+        auto data = msg.data();
+        blockNumber = data.block_n();
+        
+        std::cout << "Recebendo bloco " << blockNumber << std::endl;
+        std::cout << "Estado atual: " << currentState << std::endl;
+        
+        writeBlock(this->filename, data.message());
+
+        tftp2::Mensagem ackMsg;
+        auto* ack = ackMsg.mutable_ack();
+        ack->set_block_n(blockNumber);
+
+        std::string serializedAck;
+        ackMsg.SerializeToString(&serializedAck);
+        sendto(fd, serializedAck.data(), serializedAck.size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
+    }
+
+    void processError(const tftp2::Mensagem& msg) {
+        auto error = msg.error();
+        std::cout << "Erro recebido do servidor: " << error.errorcode() << std::endl;
         finish();
     }
-}
 
-    void handle_timeout(){
-            std::cout << "Timeout na sessão com o servidor: " << getIP(this->serverAddr) << std::endl;  
-
-            // deleta o arquivo em caso de timeout
-            try{
-                deleteFile(this->filename);
-            } catch(std::runtime_error e){
-                std::cout << e.what() << std::endl;
-            }
-
-            finish();
+    void handle_timeout() {
+        std::cout << "Timeout na sessão com o servidor: " << getIP(this->serverAddr) << std::endl;  
+        currentState = ERROR;
+        try {
+            deleteFile(this->filename);
+        } catch(std::runtime_error e) {
+            std::cout << e.what() << std::endl;
+        }
+        finish();
     }
 };
 
