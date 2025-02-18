@@ -567,7 +567,7 @@ class listCallback : public Callback {
     std::string filename;
     int sockfd;
     bool error = false;
-    enum State { WAITING_FOR_LIST, RECEIVING_LIST, COMPLETED, ERROR };
+    enum State { WAITING_FOR_LIST, RECEIVING_LIST, ERROR };
     State currentState;
 
     public:
@@ -594,16 +594,14 @@ class listCallback : public Callback {
 
                 switch (currentState) {
                     case WAITING_FOR_LIST:
-                        if (msg.has_list()) {
-                            currentState = RECEIVING_LIST;
+                        if (msg.has_list_resp()) {
                             processList(msg);
+                            finish();
                         } else if (msg.has_error()) {
                             currentState = ERROR;
                             processError(msg);
                         }
                         break;
-
-                    case COMPLETED:
                     case ERROR:
                         break;
                 }
@@ -615,9 +613,17 @@ class listCallback : public Callback {
         }
 
         void processList(const tftp2::Mensagem& msg) {
-            auto list = msg.list();
+            auto list = msg.list_resp();
             std::cout << "Arquivos no diretório " << filename << ":" << std::endl;
-            list.PrintDebugString();
+            for (int i = 0; i < list.items_size(); i++) {
+                if(list.items(i).has_dir()) {
+                    std::cout << "DIR: ";
+                    std::cout << list.items(i).dir().path() << std::endl;
+                } else {
+                    std::cout << "FILE: ";
+                    std::cout << list.items(i).file().nome() << std::endl;
+                }
+            }
         }
 
         void processError(const tftp2::Mensagem& msg) {
