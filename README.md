@@ -1,32 +1,33 @@
+
 # Open TFTP
 
-Open TFTP é uma implementação simplificada e modular do protocolo Trivial File Transfer Protocol (TFTP), conforme definido na [RFC 1350](https://datatracker.ietf.org/doc/html/rfc1350). Este projeto explora o funcionamento básico do protocolo, desde a comunicação de rede até as máquinas de estado para upload e download de arquivos.
+Open TFTP é uma implementação com novas funções do protocolo Trivial File Transfer Protocol (TFTP), conforme definido na [RFC 1350](https://datatracker.ietf.org/doc/html/rfc1350). O projeto foi ampliado para suportar não apenas operações básicas de upload e download, mas também funcionalidades de gerenciamento remoto de arquivos e diretórios, tais como renomeação, remoção, criação e listagem.
 
 ---
 
-## **Visão Geral**
+## Visão Geral
 
-TFTP é um protocolo de transferência de arquivos que opera sobre UDP, projetado para ser simples e eficiente. Este projeto implementa as seguintes funcionalidades principais:
+O TFTP é um protocolo leve que opera sobre UDP, projetado para transferência simples de arquivos. Este projeto implementa as seguintes operações:
 
-1. **Upload de arquivos (WRQ)**: Permite o envio de arquivos do cliente para o servidor.
-2. **Download de arquivos (RRQ)**: Permite a transferência de arquivos do servidor para o cliente.
-3. **Tratamento de mensagens de controle e erro**: Implementa as operações básicas de acordo com os opcodes definidos pela RFC 1350.
-4. **Estrutura modular**: Usa classes para segmentar o código em responsabilidades específicas (mensagens, cliente TFTP, callbacks e polling).
-5. **Máquinas de estado**: Gerencia o fluxo de execução para upload e download de arquivos, garantindo confiabilidade mesmo em caso de erros ou timeouts.
-
----
-
-## **Estrutura do Projeto**
-
-### **Diretórios Principais**
-- `src/`: Contém os arquivos-fonte principais.
-- `libs/`: Inclui bibliotecas auxiliares, como o poller para controle assíncrono.
+- **Upload de arquivos (WRQ):** Envio de arquivos do cliente para o servidor.
+- **Download de arquivos (RRQ):** Transferência de arquivos do servidor para o cliente.
+- **Renomeação de arquivos (MOVE):** Permite renomear ou mover arquivos no servidor.
+- **Remoção de arquivos (REMOVE):** Permite excluir arquivos do servidor.
+- **Criação de diretórios (MKDIR):** Permite criar novos diretórios no servidor.
+- **Listagem de diretórios (LIST):** Permite listar o conteúdo (arquivos e subdiretórios) de um diretório no servidor.
+- **Tratamento de mensagens e erros:** Utiliza Google Protocol Buffers para a serialização/desserialização das mensagens, com callbacks e um poller para gerenciar timeouts e erros.
 
 ---
 
-## **Estrutura de Classes**
+## Estrutura do Projeto
 
-A arquitetura do projeto foi desenhada para ser modular e extensível, com foco na separação de responsabilidades. O diagrama abaixo descreve as classes principais:
+### Diretórios Principais
+
+- **src/**: Contém os arquivos-fonte do projeto, incluindo a implementação do cliente TFTP e as classes de callbacks.
+- **libs/**: Inclui bibliotecas auxiliares, como o Poller para controle assíncrono.
+- **proto/**: Arquivos de definição de mensagens para o Google Protocol Buffers.
+
+### Diagrama de Classes
 
 ```mermaid
 classDiagram
@@ -40,35 +41,38 @@ classDiagram
         +tftpclient(string ip, string port, string filename, long timeout)
         +void upload()
         +void download()
+        +void move(string newname)
+        +void remove()
+        +void mkdir()
+        +void list()
     }
 
     class uploadCallback {
-        +sockaddr_in serverAddr
-        +string filename
-        +int blockNumber
-        +int totalBlocks
-        +int blocksize
-        +int fileSize
-        +bool lastblock
-        +int sockfd
-        +bool error
-        +int lastBlocksize
-        +uploadCallback(sockaddr_in serverAddr, int sockfd, string filename, long timeout)
         +void handle()
         +void handle_timeout()
     }
 
     class downloadCallback {
-        +sockaddr_in serverAddr
-        +string filename
-        +int blockNumber
-        +int totalBlocks
-        +int blocksize
-        +int fileSize
-        +bool lastblock
-        +int sockfd
-        +bool error
-        +downloadCallback(sockaddr_in serverAddr, int sockfd, string filename, long timeout)
+        +void handle()
+        +void handle_timeout()
+    }
+
+    class moveCallback {
+        +void handle()
+        +void handle_timeout()
+    }
+
+    class removeCallback {
+        +void handle()
+        +void handle_timeout()
+    }
+
+    class mkdirCallback {
+        +void handle()
+        +void handle_timeout()
+    }
+
+    class listCallback {
         +void handle()
         +void handle_timeout()
     }
@@ -85,172 +89,142 @@ classDiagram
         +virtual void handle()
         +virtual void handle_timeout()
     }
-
-    class Main {
-        +int main(int argc, char** argv)
-    }
-
-    class inet {
-        +inet()
-        +void run()
-        +void stop()
-        -tftpclient tftp
-        -uploadCallback upload
-        -downloadCallback download
-    }
-
-    class requestMessage {
-        +OpcodeRM opcode
-        +string filename
-        +string mode
-        +requestMessage(OpcodeRM opcode, string filename)
-        +std::vector<uint8_t> serialize()
-    }
-
-    class dataMessage {
-        +OpcodeDM opcode
-        +uint16_t blockNumber
-        +std::string data
-        +dataMessage(OpcodeDM opcode, uint16_t blockNumber, string data)
-        +std::vector<uint8_t> serialize()
-        +static dataMessage deserialize(char buffer[], int comprimento)
-        +std::string printData()
-        +int printBN()
-    }
-
-    class ackMessage {
-        +OpcodeAM opcode
-        +uint16_t blockNumber
-        +ackMessage(OpcodeAM opcode, uint16_t blockNumber)
-        +std::vector<uint8_t> serialize()
-        +static ackMessage deserialize(char buffer[], int comprimento)
-        +std::string printBN()
-    }
-
-    class errorMessage {
-        +OpcodeEM opcode
-        +uint16_t errorCode
-        +string errMsg
-        +errorMessage(OpcodeEM opcode, uint16_t errorCode, string errMsg)
-        +std::vector<uint8_t> serialize()
-        +static errorMessage deserialize(char buffer[], int comprimento)
-        +std::string printData()
-    }
-
-    class IO {
-        +static bool fileCheck(string nomeArquivo)
-        +static int fileLength(string nomeArquivo)
-        +static char* readBlock(string nomeArquivo, int n, int blockSize, int length)
-        +static void writeBlock(string nomeArquivo, string block)
-        +static void deleteFile(string nomeArquivo)
-    }
-
-    tftpclient --> uploadCallback : creates
-    tftpclient --> downloadCallback : creates
-    uploadCallback --> Poller : added to
-    downloadCallback --> Poller : added to
-    Callback <|-- uploadCallback
-    Callback <|-- downloadCallback
-    Main --> tftpclient : uses
-    Poller --> Main : interacts with
-    inet --> tftpclient : has
-    inet --> uploadCallback : has
-    inet --> downloadCallback : has
-    inet --> Poller : uses
-    inet --> IO : uses
-    inet --> requestMessage : uses
-    inet --> dataMessage : uses
-    inet --> ackMessage : uses
-    inet --> errorMessage : uses
-
-
 ```
 
-## **Estrutura de Mensagens**
-O projeto implementa mensagens seguindo o formato descrito na RFC 1350.
+---
 
-### **Tipos de Mensagens e Estruturas**
-- RRQ / WRQ:
-```
- 2 bytes     string    1 byte     string   1 byte
- ------------------------------------------------
-| Opcode |  Filename  |   0  |   "octet"   |   0  |
- ------------------------------------------------
-```
-- Data:
-```
- 2 bytes     2 bytes      512 bytes
------------------------------------
-| Opcode |   Block #  |   Data     |
------------------------------------
-```
-- ACK:
-```
- 2 bytes     2 bytes
----------------------
-| Opcode |   Block #  |
----------------------
-```
-- ERROR:
-```
- 2 bytes     2 bytes      string    1 byte
------------------------------------------
-| Opcode |  ErrorCode |   ErrMsg   |   0  |
------------------------------------------
-```
+## Funcionalidades
 
-### Operational Codes
-- ```1```: RRQ (Read Request)
-- ```2```: WRQ (Write Request)
-- ```3```: DATA (Data Block)
-- ```4```: ACK (Acknowledgment)
-- ```5```: ERROR (Error Message)
+O projeto agora suporta as seguintes operações TFTP:
 
-## **Máquinas de Estado**
-### **Envio de Arquivos (WRQ)**
-```mermaid
-stateDiagram-v2
-    [*] --> Start
-    Start --> WRQ: Enviar WRQ (Write Request)
-    WRQ --> WaitACK: Esperar ACK
-    WaitACK --> SendBlock: Receber ACK e enviar bloco
-    SendBlock --> WaitACK: Esperar próximo ACK
-    SendBlock --> Finish: Todos os blocos enviados
-    WaitACK --> HandleError: Receber mensagem de erro
-    HandleError --> Finish: Finalizar em caso de erro
-    WaitACK --> HandleTimeout: Timeout no ACK
-    HandleTimeout --> Finish: Finalizar em caso de timeout
-    Finish --> [*]
-```
-### **Recebimento de Arquivos (RRQ)**
-```mermaid
-stateDiagram-v2
-    [*] --> Start
-    Start --> RRQ: Enviar RRQ (Read Request)
-    RRQ --> WaitData: Esperar dados
-    WaitData --> WriteBlock: Receber dados e escrever bloco
-    WriteBlock --> ACK: Enviar ACK
-    ACK --> WaitData: Esperar próximo bloco
-    WriteBlock --> Finish: Último bloco recebido
-    WaitData --> HandleError: Receber mensagem de erro
-    HandleError --> Finish: Finalizar em caso de erro
-    WaitData --> HandleTimeout: Timeout nos dados
-    HandleTimeout --> Finish: Deletar arquivo e finalizar em caso de timeout
-    Finish --> [*]
+1. **Upload (WRQ):**  
+   - Cria uma mensagem de Write Request com o nome do arquivo e o modo "octet".
+   - Envia a mensagem ao servidor e utiliza um callback para gerenciar o envio dos blocos de dados.
+
+2. **Download (RRQ):**  
+   - Cria uma mensagem de Read Request com o nome do arquivo e o modo "octet".
+   - Envia a mensagem ao servidor e utiliza um callback para gerenciar a recepção e gravação dos blocos.
+
+3. **Renomeação (MOVE):**  
+   - Envia uma mensagem MOVE contendo o nome original e o novo nome para o arquivo.
+   - A operação é gerenciada por um callback que aguarda a confirmação do servidor.
+
+4. **Remoção (REMOVE):**  
+   - Envia uma mensagem MOVE (utilizada para remoção) com o nome do arquivo a ser excluído.
+   - Utiliza um callback para tratar a remoção e possíveis erros.
+
+5. **Criação de Diretório (MKDIR):**  
+   - Envia uma mensagem MKDIR com o caminho do diretório a ser criado no servidor.
+   - Um callback específico aguarda a confirmação do servidor.
+
+6. **Listagem (LIST):**  
+   - Envia uma mensagem LIST com o caminho do diretório.
+   - Um callback processa a resposta e exibe os itens contidos no diretório.
+
+## Interface de Linha de Comando (CLI)
+
+O projeto implementa uma interface de linha de comando para facilitar a interação do usuário. Ao iniciar o programa, o usuário deve fornecer o IP e a porta do servidor TFTP. Em seguida, um prompt é exibido onde comandos podem ser inseridos. Os comandos disponíveis são:
+
+- **get \<arquivo\>**  
+  Baixa o arquivo especificado do servidor.
+  
+- **put \<arquivo\>**  
+  Envia o arquivo especificado para o servidor.
+  
+- **dir \<diretório\>**  
+  Lista o conteúdo do diretório especificado no servidor.
+  
+- **move \<origem\> \<destino\>**  
+  Renomeia ou move o arquivo do nome de origem para o novo nome.
+  
+- **mkdir \<diretório\>**  
+  Cria um novo diretório no servidor.
+  
+- **remove \<arquivo/diretório\>**  
+  Remove o arquivo ou diretório especificado do servidor.
+  
+- **exit**  
+  Encerra o programa.
+
+### Exemplo de Uso da CLI
+
+Ao executar o programa, o uso é o seguinte:
+
+```bash
+./tftpclient <IP> <PORTA>
 ```
 
-## **Como Executar**
-### Dependências
-- Compilador C++ (GCC ou Clang)
-- Biblioteca ```poll.h``` incluída no diretório ```libs```
+Após a execução, o prompt será exibido:
 
-### Execução
-- Compile o projeto:
+```
+tftp >
+```
+
+**Exemplos:**
+
+- Para baixar um arquivo:
+  ```
+  tftp > get exemplo.txt
+  ```
+  
+- Para enviar um arquivo:
+  ```
+  tftp > put exemplo.txt
+  ```
+  
+- Para listar um diretório:
+  ```
+  tftp > dir diretorio_exemplo
+  ```
+  
+- Para renomear um arquivo ou alterar de diretório:
+  ```
+  tftp > move exemplo.txt novo_nome.txt
+  ```
+  
+- Para criar um diretório:
+  ```
+  tftp > mkdir novo_diretorio
+  ```
+  
+- Para remover um arquivo ou diretório ( MOVE sem local ou novo nome ):
+  ```
+  tftp > move exemplo.txt
+  ```
+  
+- Para sair:
+  ```
+  tftp > exit
+  ```
+
+Internamente, o programa converte o comando digitado para um enum correspondente e executa a operação apropriada, criando um objeto `tftpclient` com os parâmetros fornecidos e chamando o método correspondente.
+
+---
+
+## Como Compilar e Executar
+
+### Compilação
+
+Utilize o Makefile incluso para compilar o projeto:
+
 ```bash
 make
 ```
-- Execute o cliente:
+
+### Execução
+
+Para iniciar o cliente TFTP via CLI, utilize o seguinte comando:
+
 ```bash
-./tftpclient <IP> <PORT> <FILENAME> <TIMEOUT>
+./tftpclient <IP> <PORTA>
 ```
+
+Exemplo:
+
+```bash
+./tftpclient 192.168.0.100 69
+```
+
+Após a execução, o prompt `tftp >` será exibido para que você insira os comandos conforme os exemplos acima.
+
 
