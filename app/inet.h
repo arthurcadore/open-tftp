@@ -421,6 +421,78 @@ void handle() {
     }
 };
 
+
+class removeCallback : public Callback {
+    sockaddr_in serverAddr;
+    std::string oldName;
+    int sockfd;
+    bool error = false;
+    enum State { SENDING_MOVE, WAITING_FOR_ACK, COMPLETED, ERROR };
+    State currentState;
+
+public:
+    removeCallback(sockaddr_in &serverAddr, int sockfd, const std::string& oldName, long timeout) 
+        : Callback(sockfd, timeout), serverAddr(serverAddr), oldName(oldName), sockfd(sockfd), currentState(WAITING_FOR_ACK) {
+        this->fd = sockfd;
+        std::cout << "moveCallback: " << oldName << std::endl;
+    }
+
+void handle() {
+    char bufferRX[1024];
+    socklen_t addrLen = sizeof(serverAddr);
+    ssize_t recvBytes = recvfrom(fd, bufferRX, sizeof(bufferRX), 0, (sockaddr*)&serverAddr, &addrLen);
+
+    if (recvBytes < 0) {
+        throw std::runtime_error("Erro ao receber a mensagem");
+    }
+
+    try {
+        tftp2::Mensagem msg;
+        if (!msg.ParseFromArray(bufferRX, recvBytes)) {
+            throw std::runtime_error("Falha ao desserializar a mensagem");
+        }
+
+        switch (currentState) {
+
+            case WAITING_FOR_ACK:
+                std::cout << "Esperando ACK" << std::endl;
+                if (msg.has_ack()) {
+                    auto ack = msg.ack();
+                    if (ack.block_n() == 0) {
+                        std::cout << "ACK recebido. Remoção concluída." << std::endl;
+                        currentState = COMPLETED;
+                        finish();
+                    }
+                } else if (msg.has_error()) {
+                    currentState = ERROR;
+                    processError(msg);
+                }
+                break;
+
+            case COMPLETED:
+            case ERROR:
+                break;
+        }
+    } catch (std::exception& e) {
+        std::cerr << "Erro: " << e.what() << std::endl;
+        currentState = ERROR;
+        finish();
+    }
+}
+
+    void processError(const tftp2::Mensagem& msg) {
+        auto error = msg.error();
+        std::cout << "Erro recebido do servidor: " << error.errorcode() << std::endl;
+        finish();
+    }
+
+    void handle_timeout() {
+        std::cout << "Timeout na sessão com o servidor: " << getIP(this->serverAddr) << std::endl;   
+        currentState = ERROR;
+        finish();
+    }
+};
+
 class mkdirCallback : public Callback {
     sockaddr_in serverAddr;
     std::string dirname;
@@ -489,5 +561,79 @@ class mkdirCallback : public Callback {
             finish();
         }
 };
+
+class listCallback : public Callback {
+    sockaddr_in serverAddr;
+    std::string filename;
+    int sockfd;
+    bool error = false;
+    enum State { WAITING_FOR_LIST, RECEIVING_LIST, COMPLETED, ERROR };
+    State currentState;
+
+    public:
+
+        listCallback(sockaddr_in &serverAddr, int sockfd, const std::string& filename, long timeout) 
+            : Callback(sockfd, timeout), serverAddr(serverAddr), filename(filename), sockfd(sockfd), currentState(WAITING_FOR_LIST) {
+            this->fd = sockfd;
+        }
+
+        void handle() {
+            char bufferRX[1024];
+            socklen_t addrLen = sizeof(serverAddr);
+            ssize_t recvBytes = recvfrom(fd, bufferRX, sizeof(bufferRX), 0, (sockaddr*)&serverAddr, &addrLen);
+
+            if (recvBytes < 0) {
+                throw std::runtime_error("Erro ao receber a mensagem");
+            }
+
+            try {
+                tftp2::Mensagem msg;
+                if (!msg.ParseFromArray(bufferRX, recvBytes)) {
+                    throw std::runtime_error("Falha ao desserializar a mensagem");
+                }
+
+                switch (currentState) {
+                    case WAITING_FOR_LIST:
+                        if (msg.has_list()) {
+                            currentState = RECEIVING_LIST;
+                            processList(msg);
+                        } else if (msg.has_error()) {
+                            currentState = ERROR;
+                            processError(msg);
+                        }
+                        break;
+
+                    case COMPLETED:
+                    case ERROR:
+                        break;
+                }
+            } catch (std::exception& e) {
+                std::cerr << "Erro: " << e.what() << std::endl;
+                currentState = ERROR;
+                finish();
+            }
+        }
+
+        void processList(const tftp2::Mensagem& msg) {
+            auto list = msg.list();
+            std::cout << "Arquivos no diretório " << filename << ":" << std::endl;
+            list.PrintDebugString();
+        }
+
+        void processError(const tftp2::Mensagem& msg) {
+            auto error = msg.error();
+            std::cout << "Erro recebido do servidor: " << error.errorcode() << std::endl;
+            finish();
+        }
+
+        void handle_timeout() {
+            std::cout << "Timeout na sessão com o servidor: " << getIP(this->serverAddr) << std::endl;
+            currentState = ERROR;
+            finish();
+
+        }
+};
+
+
 
 #endif

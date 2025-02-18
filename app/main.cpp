@@ -17,7 +17,7 @@ Comando converterComando(const std::string& comando) {
     if (comando == "exit") return CMD_EXIT;
     if (comando == "get") return CMD_GET;
     if (comando == "put") return CMD_PUT;
-    if (comando == "list") return CMD_LIST;
+    if (comando == "dir") return CMD_LIST;
     if (comando == "move") return CMD_MOVE;
     if (comando == "mkdir") return CMD_MKDIR;
     if (comando == "remove") return CMD_REMOVE;

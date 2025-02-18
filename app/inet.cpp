@@ -156,6 +156,37 @@ void tftpclient::move(const std::string& newname) {
     poller.despache();
 }
 
+void tftpclient::remove() {
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+    std::cout << "Removendo arquivo: " << this->filename << std::endl;
+
+    // Cria a mensagem de MOVE e envia para o servidor
+    tftp2::Mensagem moveMsg;
+
+    // Configura a mensagem MOVE
+    auto* move = moveMsg.mutable_move();
+    move->set_nome_orig(filename);
+    // Serializa a mensagem MOVE
+    std::string moveString;
+    moveMsg.SerializeToString(&moveString);
+
+    // Envia a mensagem para o servidor
+    sendto(this->sockfd, moveString.data(), moveString.size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
+
+    // Cria um callback para o comando MOVE
+    removeCallback cb(this->serverAddr, this->sockfd, filename, this->timeout);
+
+    // Cria um poller
+    Poller poller;
+
+    // Adiciona o callback ao poller
+    poller.adiciona(&cb);
+
+    // Despacha o poller
+    poller.despache();
+}
+
 void tftpclient::mkdir(){
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -190,38 +221,39 @@ void tftpclient::mkdir(){
 
 
 
+void tftpclient::list(){
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-// void tftpclient::remove(){
-//     GOOGLE_PROTOBUF_VERIFY_VERSION;
+    std::cout << "Listando diretório: " << this->filename << std::endl;
 
-//     std::cout << "Removendo arquivo: " << this->filename << std::endl;
+    // Cria a mensagem de LIST e envia para o servidor
+    tftp2::Mensagem listMsg;
 
-//     // Cria a mensagem de REMOVE e envia para o servidor
-//     tftp2::Mensagem removeMsg;
+    // Configura a mensagem LIST
+    auto* list = listMsg.mutable_list();
+    list->set_path(filename);
 
-//     // Configura a mensagem REMOVE
-//     auto* remove = removeMsg.mutable
-//     remove->set_nome(filename);
+    // Serializa a mensagem LIST
+    std::string listString;
+    listMsg.SerializeToString(&listString);
 
-//     // Serializa a mensagem REMOVE
-//     std::string removeString;
-//     removeMsg.SerializeToString(&removeString);
+    // Envia a mensagem para o servidor
+    sendto(this->sockfd, listString.data(), listString.size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
 
-//     // Envia a mensagem para o servidor
-//     sendto(this->sockfd, removeString.data(), removeString.size(), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
+    // Cria um callback para o comando LIST
+    listCallback cb(this->serverAddr, this->sockfd, filename, this->timeout);
 
-//     // Cria um callback para o comando REMOVE
-//     removeCallback cb(this->serverAddr, this->sockfd, filename, this->timeout);
+    // Cria um poller
+    Poller poller;
 
-//     // Cria um poller
-//     Poller poller;
+    // Adiciona o callback ao poller
+    poller.adiciona(&cb);
 
-//     // Adiciona o callback ao poller
-//     poller.adiciona(&cb);
+    // Despacha o poller
+    poller.despache();
+}
 
-//     // Despacha o poller
-//     poller.despache();
-// }
+
 
 /*
   Função para receber um socket e retornar uma string com o endereço IP de origem
@@ -234,13 +266,4 @@ std::string getIP(sockaddr_in socket) {
   char ip[INET_ADDRSTRLEN];
   inet_ntop(AF_INET, &(socket.sin_addr), ip, INET_ADDRSTRLEN);
   return std::string(ip);
-}
-
-
-void tftpclient::list(){
-
-}
-
-void tftpclient::remove(){
-  
 }
